@@ -13,12 +13,10 @@
       },
       "android": {
         "gradleCommand": ":app:assembleDebug",
-        "buildType": "apk",
-        "applicationId": "app.hunty.mobile.dev"
+        "buildType": "apk"
       },
       "ios": {
         "buildConfiguration": "Debug",
-        "bundleIdentifier": "app.hunty.mobile.dev",
         "simulator": false
       }
     },
@@ -31,12 +29,10 @@
       },
       "android": {
         "gradleCommand": ":app:assembleRelease",
-        "buildType": "apk",
-        "applicationId": "app.hunty.mobile.preview"
+        "buildType": "apk"
       },
       "ios": {
-        "buildConfiguration": "Release",
-        "bundleIdentifier": "app.hunty.mobile.preview"
+        "buildConfiguration": "Release"
       }
     },
     "production": {
@@ -47,12 +43,10 @@
         "APP_ENV": "production"
       },
       "android": {
-        "buildType": "app-bundle",
-        "applicationId": "app.hunty.mobile"
+        "buildType": "app-bundle"
       },
       "ios": {
-        "buildConfiguration": "Release",
-        "bundleIdentifier": "app.hunty.mobile"
+        "buildConfiguration": "Release"
       }
     }
   },
@@ -63,9 +57,9 @@
         "track": "internal"
       },
       "ios": {
-        "appleId": "APPLE_ID",
-        "ascAppId": "ASC_APP_ID",
-        "appleTeamId": "APPLE_TEAM_ID"
+        "appleId": "you@email.com",
+        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
+        "appleTeamId": "YOUR_APPLE_TEAM_ID"
       }
     }
   }

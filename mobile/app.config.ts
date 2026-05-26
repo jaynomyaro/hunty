@@ -1,66 +1,71 @@
 /// <reference types="node" />
-import { ExpoConfig } from 'expo/config';
+import "dotenv/config";
 
-type AppEnv = 'development' | 'preview' | 'production';
+type AppEnv = "development" | "preview" | "production";
+const ENV = (process.env.APP_ENV ?? "development") as AppEnv;
 
-const APP_ENV = (process.env.APP_ENV ?? 'development') as AppEnv;
-
-const envConfig: Record<AppEnv, { name: string; bundleId: string; androidPackage: string }> = {
+const envConfig = {
   development: {
-    name: 'Hunty (Dev)',
-    bundleId: 'app.hunty.mobile.dev',
-    androidPackage: 'app.hunty.mobile.dev',
+    name: "Hunty (Dev)",
+    bundleId: "com.yourorg.hunty.dev",
+    androidPackage: "com.yourorg.hunty.dev",
+    icon: "./assets/icon-dev.png",
+    apiUrl: process.env.API_URL ?? "https://dev-api.hunty.com",
   },
   preview: {
-    name: 'Hunty (Preview)',
-    bundleId: 'app.hunty.mobile.preview',
-    androidPackage: 'app.hunty.mobile.preview',
+    name: "Hunty (Preview)",
+    bundleId: "com.yourorg.hunty.staging",
+    androidPackage: "com.yourorg.hunty.staging",
+    icon: "./assets/icon-preview.png",
+    apiUrl: process.env.API_URL ?? "https://staging-api.hunty.com",
   },
   production: {
-    name: 'Hunty',
-    bundleId: 'app.hunty.mobile',
-    androidPackage: 'app.hunty.mobile',
+    name: "Hunty",
+    bundleId: "com.yourorg.hunty",
+    androidPackage: "com.yourorg.hunty",
+    icon: "./assets/icon.png",
+    apiUrl: process.env.API_URL ?? "https://api.hunty.com",
   },
 };
 
-const { name, bundleId, androidPackage } = envConfig[APP_ENV];
+const config = envConfig[ENV];
 
-const config: ExpoConfig = {
-  name,
-  slug: 'hunty-mobile',
-  version: '1.0.0',
-  orientation: 'portrait',
-  icon: './assets/icon.png',
-  userInterfaceStyle: 'automatic',
-  newArchEnabled: true,
-  splash: {
-    image: './assets/splash-icon.png',
-    resizeMode: 'contain',
-    backgroundColor: '#ffffff',
-  },
-  ios: {
-    bundleIdentifier: bundleId,
-    supportsTablet: true,
-  },
-  android: {
-    package: androidPackage,
-    adaptiveIcon: {
-      foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#ffffff',
+export default {
+  expo: {
+    name: config.name,
+    slug: "hunty",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: config.icon,
+    userInterfaceStyle: "light",
+    splash: {
+      image: "./assets/splash.png",
+      resizeMode: "contain",
+      backgroundColor: "#ffffff",
     },
-    edgeToEdgeEnabled: true,
-    predictiveBackGestureEnabled: false,
+    ios: {
+      bundleIdentifier: config.bundleId,
+      supportsTablet: true,
+    },
+    android: {
+      package: config.androidPackage,
+      adaptiveIcon: {
+        foregroundImage: "./assets/adaptive-icon.png",
+        backgroundColor: "#ffffff",
+      },
+    },
+    updates: {
+      url: "https://u.expo.dev/YOUR_EAS_PROJECT_ID",
+    },
+    runtimeVersion: {
+      policy: "appVersion",
+    },
+    extra: {
+      appEnv: ENV,
+      apiUrl: config.apiUrl,
+      eas: {
+        projectId: "YOUR_EAS_PROJECT_ID",
+      },
+    },
   },
-  web: { favicon: './assets/favicon.png' },
-  plugins: ['expo-router'],
-  extra: {
-    appEnv: APP_ENV,
-    eas: { projectId: 'YOUR_EAS_PROJECT_ID' },
-  },
-  updates: {
-    url: 'https://u.expo.dev/YOUR_EAS_PROJECT_ID',
-  },
-  runtimeVersion: { policy: 'appVersion' },
 };
-
-export default config;
