@@ -1,3 +1,5 @@
+import { useCallback, useEffect } from 'react';
+import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useEffect } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 import { Stack, type ErrorBoundaryProps, useRouter } from 'expo-router';
@@ -6,6 +8,8 @@ import { useFonts } from 'expo-font';
 import { hideSplashScreen } from '@utils/splashScreenManager';
 import { useTheme } from '@providers/ThemeProvider';
 import { ThemedCustomText, ThemedButton } from '@components/themed';
+import { useBackHandler } from '../hooks/useBackHandler';
+import { MemoryDiagnosticsOverlay } from '../components/MemoryDiagnosticsOverlay';
 import { StackHeader } from '@components/navigation/StackHeader';
 import { Sentry } from '@config/sentry';
 
@@ -50,19 +54,16 @@ export default function RootLayout() {
     }
   }, [loaded, error]);
 
-  useEffect(() => {
-    const backAction = () => {
-      if (router.canGoBack()) {
-        router.back();
-        return true;
-      }
-      return false;
-    };
+  const backAction = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+      return true;
+    }
 
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
-
-    return () => backHandler.remove();
+    return false;
   }, [router]);
+
+  useBackHandler(backAction);
 
   if (!loaded && !error) {
     return null;
@@ -100,6 +101,8 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: colors.background },
             statusBarStyle: isDark ? 'light' : 'dark',
           }}
+        />
+        <MemoryDiagnosticsOverlay />
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="details" options={{ title: 'Details' }} />
