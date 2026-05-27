@@ -6,12 +6,18 @@ import { useFonts } from 'expo-font';
 import { hideSplashScreen } from '@utils/splashScreenManager';
 import { useTheme } from '@providers/ThemeProvider';
 import { ThemedCustomText, ThemedButton } from '@components/themed';
+import { StackHeader } from '@components/navigation/StackHeader';
+import { Sentry } from '@config/sentry';
 
 export const unstable_settings = {
-  initialRouteName: 'index',
+  initialRouteName: '(tabs)',
 };
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  useEffect(() => {
+    Sentry.Native.captureException(error);
+  }, [error]);
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'bottom', 'left']}>
       <View style={styles.errorContainer}>
@@ -82,6 +88,25 @@ export default function RootLayout() {
         }}
       />
     </SafeAreaView>
+    <SafeAreaProvider>
+      <SafeAreaView 
+        style={[styles.safeArea, { backgroundColor: colors.background }]} 
+        edges={['top', 'right', 'bottom', 'left']}
+      >
+        <Stack
+          screenOptions={{
+            header: (props) => <StackHeader {...props} />,
+            headerTintColor: '#ffffff',
+            contentStyle: { backgroundColor: colors.background },
+            statusBarStyle: isDark ? 'light' : 'dark',
+          }}
+        >
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="details" options={{ title: 'Details' }} />
+          <Stack.Screen name="nested" options={{ title: 'Nested' }} />
+        </Stack>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
