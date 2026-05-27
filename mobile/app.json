@@ -33,6 +33,18 @@
       "intentFilters": [
         {
           "action": "VIEW",
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "scheme": "hunty"
+            }
+          ]
+        },
+        {
+          "action": "VIEW",
           "autoVerify": true,
           "category": [
             "BROWSABLE",

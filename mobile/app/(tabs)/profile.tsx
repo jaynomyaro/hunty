@@ -357,13 +357,19 @@ function HuntColumn({
 
 export default function ProfileScreen() {
   const { colors } = useTheme();
-  const { walletAddress, isConnected } = useWalletStore();
+  const { walletAddress, isConnected, watchOnlyAddress } = useWalletStore();
   const [hunts, setHunts] = useState<PlayerHuntProgress[]>([]);
   const [nftRewards, setNftRewards] = useState<NftRewardDetail[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const activeAddress = isConnected ? walletAddress : watchOnlyAddress;
+  const usingWatchOnly = !isConnected && Boolean(watchOnlyAddress);
+  const displayAddress = activeAddress ? shortenAddress(activeAddress) : "Not connected";
+
+  const loadProfileData = async () => {
+    if (!activeAddress) {
   const displayAddress = walletAddress
     ? shortenAddress(walletAddress)
     : "Not connected";
@@ -378,8 +384,8 @@ export default function ProfileScreen() {
     setError(null);
     try {
       const [huntsData, rewardsData] = await Promise.all([
-        fetchPlayerHunts(walletAddress),
-        fetchPlayerRewards(walletAddress),
+        fetchPlayerHunts(activeAddress),
+        fetchPlayerRewards(activeAddress),
       ]);
       setHunts(huntsData);
       setNftRewards(rewardsData);
@@ -393,6 +399,8 @@ export default function ProfileScreen() {
   }, [isConnected, walletAddress]);
 
   useEffect(() => {
+    loadProfileData();
+  }, [activeAddress]);
     void loadProfileData();
   }, [loadProfileData]);
 
@@ -427,7 +435,7 @@ export default function ProfileScreen() {
     [hunts],
   );
 
-  if (!isConnected || !walletAddress) {
+  if (!activeAddress) {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.emptyContainer}>
@@ -439,7 +447,7 @@ export default function ProfileScreen() {
             played and aggregate your points across games.
           </ThemedCustomText>
           <ThemedCustomText variant="caption" style={styles.emptyHint}>
-            Use the Connect Wallet button in the Settings tab to get started.
+            Use the Connect Wallet button or add a watch-only address in Settings.
           </ThemedCustomText>
         </View>
       </ThemedView>
@@ -467,6 +475,14 @@ export default function ProfileScreen() {
           <ThemedCustomText variant="caption" style={styles.subtitle}>
             View your hunt history, progress, and total points earned.
           </ThemedCustomText>
+          <View style={[styles.walletCard, { backgroundColor: colors.primary + "10", borderColor: colors.border }]}>
+            <ThemedCustomText variant="caption" style={styles.walletLabel}>
+              {usingWatchOnly ? 'Watch-only Address' : 'Connected Wallet'}
+            </ThemedCustomText>
+            {usingWatchOnly ? (
+              <ThemedCustomText variant="caption" color="info">Watch-only mode</ThemedCustomText>
+            ) : null}
+            <ThemedCustomText variant="label" weight="600" style={styles.walletAddress}>
           <View
             style={[
               styles.walletCard,
@@ -757,6 +773,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 12,
     paddingHorizontal: 24,
+  },
+  emptyTitle: {
+    textAlign: "center",
+    fontWeight: "700",
+  },
+  emptyText: {
+    textAlign: "center",
+    maxWidth: 300,
+  },
+  emptyHint: {
+    marginTop: 8,
+    opacity: 0.7,
+  },
+  loadingContainer: {
+    paddingVertical: 48,
+    alignItems: "center",
   },
   centeredBold: { textAlign: "center", fontWeight: "700" },
   centeredCaption: { textAlign: "center", maxWidth: 300 },
