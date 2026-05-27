@@ -1,14 +1,17 @@
-import { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, Pressable, Alert, ScrollView } from 'react-native';
-import { useRouter, useSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ThemedCustomText, ThemedView } from '@components/themed';
+import { useTheme } from '@providers/ThemeProvider';
 import { getHuntById, getHuntClues } from '@store/huntStore';
 import { usePlayerStore } from '@store/useStore';
 import { CluesList } from '@components/CluesList';
-import type { StoredHunt, Clue } from '@lib/types';
+import type { Clue, StoredHunt } from '@lib/types';
 
 export default function NestedScreen() {
   const router = useRouter();
-  const { huntId, clueIndex } = useSearchParams();
+  const { colors } = useTheme();
+  const { huntId, clueIndex } = useLocalSearchParams<{ huntId?: string; clueIndex?: string }>();
   const [hunt, setHunt] = useState<StoredHunt | null>(null);
   const [clues, setClues] = useState<Clue[]>([]);
   const [answer, setAnswer] = useState('');
@@ -71,33 +74,31 @@ export default function NestedScreen() {
   if (!clue) return <View style={styles.container} />;
 
   return (
-    <View style={styles.container}>
-      {/* Main Clue Content */}
+    <ThemedView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {hunt && <Text style={styles.huntTitle}>{hunt.title}</Text>}
-        <Text style={styles.header}>
+        {hunt && <ThemedCustomText variant="caption" style={styles.huntTitle}>{hunt.title}</ThemedCustomText>}
+        <ThemedCustomText variant="label" style={styles.header}>
           Clue {idx + 1} of {clues.length}
-        </Text>
-        <View style={styles.progressBarContainer}>
+        </ThemedCustomText>
+        <View style={[styles.progressBarContainer, { backgroundColor: colors.border }]}> 
           <View
             style={[
               styles.progressBar,
-              { width: `${((idx + 1) / clues.length) * 100}%` },
+              { width: `${((idx + 1) / clues.length) * 100}%`, backgroundColor: colors.primary },
             ]}
           />
         </View>
 
-        <Text style={styles.question}>{clue.question}</Text>
+        <ThemedCustomText variant="h3" weight="700" style={styles.question}>{clue.question}</ThemedCustomText>
 
         {clue.hint && (
-          <View style={styles.hintContainer}>
-            <Text style={styles.hintLabel}>💡 Hint:</Text>
-            <Text style={styles.hintText}>{clue.hint}</Text>
+          <View style={[styles.hintContainer, { borderLeftColor: colors.warning, backgroundColor: colors.warning + '14' }]}> 
+            <ThemedCustomText variant="caption" color="warning" weight="700">Hint</ThemedCustomText>
+            <ThemedCustomText variant="caption" style={styles.hintText}>{clue.hint}</ThemedCustomText>
           </View>
         )}
 
         <TextInput
-          style={styles.input}
           placeholder="Your answer..."
           placeholderTextColor="#bbb"
           value={answer}
@@ -105,34 +106,35 @@ export default function NestedScreen() {
           autoCapitalize="none"
           autoCorrect={false}
           editable={true}
+          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
         />
 
-        {/* Navigation Buttons */}
         <View style={styles.buttonRow}>
           <Pressable
-            style={[styles.navButton, idx === 0 && styles.disabledButton]}
+            style={[styles.navButton, { backgroundColor: colors.info }, idx === 0 && styles.disabledButton]}
             onPress={handlePreviousClue}
             disabled={idx === 0}
           >
-            <Text style={styles.navButtonText}>← Previous</Text>
+            <ThemedCustomText variant="caption" lightColor="#fff" darkColor="#fff" weight="700">Previous</ThemedCustomText>
           </Pressable>
 
-          <Pressable style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>
+          <Pressable style={[styles.submitButton, { backgroundColor: colors.primary }]} onPress={handleSubmit}>
+            <ThemedCustomText variant="caption" lightColor="#fff" darkColor="#fff" weight="700">
               {isLast ? '🏁 Finish' : '✓ Submit'}
-            </Text>
+            </ThemedCustomText>
           </Pressable>
 
           <Pressable
             style={[
               styles.navButton,
+              { backgroundColor: colors.info },
               (idx === clues.length - 1 || !completedClues.has(idx)) &&
                 styles.disabledButton,
             ]}
             onPress={handleNextClue}
             disabled={idx === clues.length - 1 || !completedClues.has(idx)}
           >
-            <Text style={styles.navButtonText}>Next →</Text>
+            <ThemedCustomText variant="caption" lightColor="#fff" darkColor="#fff" weight="700">Next</ThemedCustomText>
           </Pressable>
         </View>
 
@@ -140,11 +142,10 @@ export default function NestedScreen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Text style={styles.backButtonText}>← Back to Hunt</Text>
+          <ThemedCustomText variant="caption" color="primary" weight="700">Back to Hunt</ThemedCustomText>
         </Pressable>
       </ScrollView>
 
-      {/* Clues List Drill-down */}
       {showCluesDropdown && clues.length > 0 && (
         <CluesList
           clues={clues}
@@ -153,32 +154,25 @@ export default function NestedScreen() {
           onSelectClue={handleNavigateToClue}
         />
       )}
-    </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   content: {
     flex: 1,
     padding: 16,
   },
   huntTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   header: {
-    fontSize: 16,
-    color: '#333',
     marginBottom: 12,
-    fontWeight: '500',
   },
   progressBarContainer: {
     height: 6,
@@ -189,43 +183,27 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#17a2b8',
   },
   question: {
-    fontSize: 20,
-    fontWeight: '700',
     marginBottom: 20,
     lineHeight: 28,
-    color: '#1a1a1a',
   },
   hintContainer: {
-    backgroundColor: '#fffbf0',
     borderLeftWidth: 4,
-    borderLeftColor: '#ff9800',
     padding: 12,
     borderRadius: 6,
     marginBottom: 16,
   },
-  hintLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#ff9800',
-    marginBottom: 4,
-  },
   hintText: {
-    fontSize: 13,
-    color: '#666',
     lineHeight: 18,
   },
   input: {
-    borderWidth: 2,
-    borderColor: '#ddd',
+    borderWidth: 1,
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
     marginBottom: 20,
     backgroundColor: '#fafafa',
-    color: '#333',
   },
   buttonRow: {
     flexDirection: 'row',
@@ -234,7 +212,6 @@ const styles = StyleSheet.create({
   },
   navButton: {
     flex: 1,
-    backgroundColor: '#6c757d',
     paddingVertical: 11,
     borderRadius: 6,
     alignItems: 'center',
@@ -242,7 +219,6 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     flex: 1.2,
-    backgroundColor: '#28a745',
     paddingVertical: 11,
     borderRadius: 6,
     alignItems: 'center',
@@ -252,62 +228,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
     opacity: 0.6,
   },
-  navButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  submitButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#fff',
-  },
   backButton: {
     paddingVertical: 10,
     paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  backButtonText: {
-    fontSize: 13,
-    color: '#17a2b8',
-    fontWeight: '500',
-  },
-});
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-});
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 18,
-    backgroundColor: '#ffffff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  subtitle: {
-    color: '#444',
-    marginBottom: 16,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 14,
-  },
-  feedback: {
-    marginBottom: 12,
-    color: '#cc0000',
-  },
-  linkRow: {
-    marginTop: 18,
   },
 });

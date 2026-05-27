@@ -1,106 +1,40 @@
-import { useState, useEffect } from 'react';
-import { StyleSheet, FlatList, View, Text, Pressable } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { ThemedButton, ThemedCustomText, ThemedView } from '@components/themed';
+import { useTheme } from '@providers/ThemeProvider';
 import { getAllHunts } from '@store/huntStore';
+import { usePlayerStore } from '@store/useStore';
 import type { StoredHunt } from '@lib/types';
 
 export default function HuntsScreen() {
+  const { colors } = useTheme();
+  const { currentProgress, setProgress } = usePlayerStore();
   const router = useRouter();
   const [hunts, setHunts] = useState<StoredHunt[]>([]);
+  const [loadingHuntId, setLoadingHuntId] = useState<number | null>(null);
 
   useEffect(() => {
     getAllHunts().then((data) => {
-      setHunts(data.filter((h) => h.status === 'Active'));
+      setHunts(data.filter((hunt) => hunt.status === 'Active'));
     });
   }, []);
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Active Hunts</Text>
-      <FlatList
-        data={hunts}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => router.push(`/details?huntId=${item.id}`)}
-            style={styles.card}
-          >
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardDesc}>{item.description}</Text>
-            <Text style={styles.cardMeta}>{item.cluesCount} clues</Text>
-          </Pressable>
-        )}
-      />
-    </View>
-import { StyleSheet } from 'react-native';
-import { ThemedView } from '@components/themed';
-import { GraphQLHuntsFeed } from '@components/GraphQLHuntsFeed';
-import { HuntsList } from '@components/HuntsList';
-import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { ThemedView, ThemedCustomText, ThemedButton } from '@components/themed';
-import { useHaptics } from '@/hooks/useHaptics';
-import { usePlayerStore } from '@store/useStore';
-import { useTheme } from '@providers/ThemeProvider';
-
-interface HuntItem {
-  id: number;
-  title: string;
-  description: string;
-  cluesCount: number;
-  rewardType: 'XLM' | 'NFT' | 'Both';
-  rewardAmount: string;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-}
-
-const FEATURED_HUNTS: HuntItem[] = [
-  {
-    id: 1,
-    title: 'City Secrets',
-    description: 'Race across town to uncover hidden murals and landmarks.',
-    cluesCount: 5,
-    rewardType: 'Both',
-    rewardAmount: '100 XLM + Rare NFT',
-    difficulty: 'Medium',
-  },
-  {
-    id: 2,
-    title: 'Campus Quest',
-    description: 'Solve riddles scattered around campus before the timer ends.',
-    cluesCount: 7,
-    rewardType: 'NFT',
-    rewardAmount: 'Exclusive Student NFT',
-    difficulty: 'Easy',
-  },
-  {
-    id: 3,
-    title: 'Cyberpunk Odyssey',
-    description: 'Decipher futuristic encrypted codes in the downtown core.',
-    cluesCount: 10,
-    rewardType: 'XLM',
-    rewardAmount: '250 XLM',
-    difficulty: 'Hard',
-  },
-];
-
-export default function HuntsScreen() {
-  const { colors } = useTheme();
-  const haptics = useHaptics();
-  const { currentProgress, setProgress } = usePlayerStore();
-  
-  // Track loading and joined status for each hunt
-  const [loadingHuntId, setLoadingHuntId] = useState<number | null>(null);
-
-  const handleJoinHunt = async (hunt: HuntItem) => {
+  const handleJoinHunt = (hunt: StoredHunt) => {
     if (loadingHuntId !== null) return;
-    
-    // Trigger subtle haptic for initiation
-    haptics.triggerImpact('light');
+
     setLoadingHuntId(hunt.id);
 
-    // Simulate real-world Stellar transaction / server request
+    router.push({
+      pathname: '/transaction/pending',
+      params: {
+        action: 'join',
+        huntId: String(hunt.id),
+        huntTitle: hunt.title,
+      },
+    });
+
     setTimeout(() => {
-      // Set global player progress in Zustand
       setProgress({
         hunt_id: hunt.id,
         player: 'GD72...3W9A',
@@ -108,27 +42,12 @@ export default function HuntsScreen() {
         completed: false,
         reward_claimed: false,
       });
-
       setLoadingHuntId(null);
-      
-      // Trigger tactile success haptic feedback (Success Notification)
-      haptics.joinSuccess();
-
-      // Show beautiful feedback
-      Alert.alert(
-        'Successfully Joined!',
-        `You have successfully registered for "${hunt.title}". Start solving the clues in the Play tab!`,
-        [{ text: 'Let\'s Go!' }]
-      );
-    }, 1200);
+    }, 50);
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <GraphQLHuntsFeed />
-      <HuntsList />
-    </ThemedView>
-    <ScrollView 
+    <ScrollView
       style={[styles.scrollView, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
@@ -177,47 +96,33 @@ export default function HuntsScreen() {
         Featured Hunts
       </ThemedCustomText>
 
-      {/* Hunts List */}
       <View style={styles.listContainer}>
-        {FEATURED_HUNTS.map((hunt) => {
+        {hunts.map((hunt) => {
           const isCurrent = currentProgress?.hunt_id === hunt.id;
           const isLoading = loadingHuntId === hunt.id;
+          const rewardAmount =
+            hunt.rewardType === 'Both'
+              ? '100 XLM + NFT'
+              : hunt.rewardType === 'NFT'
+                ? 'Exclusive reward NFT'
+                : '250 XLM';
 
           return (
-            <View 
-              key={hunt.id} 
+            <View
+              key={hunt.id}
               style={[
-                styles.card, 
-                { 
-                  backgroundColor: colors.background, 
+                styles.card,
+                {
+                  backgroundColor: colors.background,
                   borderColor: isCurrent ? colors.success : colors.border,
                   shadowColor: isCurrent ? colors.success : '#000',
-                }
+                },
               ]}
             >
-              {/* Badge Indicators */}
               <View style={styles.badgeRow}>
-                <View 
-                  style={[
-                    styles.difficultyBadge, 
-                    { 
-                      backgroundColor: 
-                        hunt.difficulty === 'Easy' ? colors.success + '20' : 
-                        hunt.difficulty === 'Medium' ? colors.warning + '20' : 
-                        colors.error + '20'
-                    }
-                  ]}
-                >
-                  <ThemedCustomText 
-                    variant="caption" 
-                    color={
-                      hunt.difficulty === 'Easy' ? 'success' : 
-                      hunt.difficulty === 'Medium' ? 'warning' : 
-                      'error'
-                    }
-                    weight="700"
-                  >
-                    {hunt.difficulty}
+                <View style={[styles.difficultyBadge, { backgroundColor: colors.info + '20' }]}>
+                  <ThemedCustomText variant="caption" color="info" weight="700">
+                    Active
                   </ThemedCustomText>
                 </View>
 
@@ -237,7 +142,6 @@ export default function HuntsScreen() {
                 {hunt.description}
               </ThemedCustomText>
 
-              {/* Info Row */}
               <View style={[styles.cardInfoRow, { borderTopColor: colors.border }]}>
                 <View style={styles.infoCol}>
                   <ThemedCustomText variant="caption" color="text" style={{ opacity: 0.6 }}>
@@ -253,23 +157,19 @@ export default function HuntsScreen() {
                     Potential Reward
                   </ThemedCustomText>
                   <ThemedCustomText variant="body" color="primary" weight="700">
-                    {hunt.rewardAmount}
+                    {rewardAmount}
                   </ThemedCustomText>
                 </View>
               </View>
 
-              {/* Join Action Button */}
               <View style={styles.buttonContainer}>
                 {isCurrent ? (
                   <ThemedButton
-                    text="Resume Hunt ⚡"
+                    text="View Hunt"
                     variant="success"
                     size="md"
                     fullWidth
-                    onPress={() => {
-                      haptics.triggerImpact('medium');
-                      Alert.alert('Active Hunt', `You are currently doing this hunt! Switch to the Play tab to solve clues.`);
-                    }}
+                    onPress={() => router.push(`/hunt/${hunt.id}`)}
                   />
                 ) : (
                   <ThemedButton
@@ -292,38 +192,8 @@ export default function HuntsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
   scrollView: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 16,
-  },
-  card: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    backgroundColor: '#f9f9f9',
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  cardDesc: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  cardMeta: {
-    fontSize: 12,
-    color: '#999',
   },
   contentContainer: {
     padding: 20,

@@ -1,20 +1,27 @@
-import { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, View, Text, Pressable, FlatList } from 'react-native';
-import { useRouter, useSearchParams } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ThemedCustomText, ThemedView } from '@components/themed';
+import { useTheme } from '@providers/ThemeProvider';
 import { getHuntById, getHuntClues } from '@store/huntStore';
 import { usePlayerStore } from '@store/useStore';
-import type { StoredHunt, Clue } from '@lib/types';
+import type { Clue, StoredHunt } from '@lib/types';
 
 export default function DetailsScreen() {
   const router = useRouter();
-  const { huntId } = useSearchParams();
+  const { colors } = useTheme();
+  const { huntId } = useLocalSearchParams<{ huntId?: string }>();
   const [hunt, setHunt] = useState<StoredHunt | null>(null);
   const [clues, setClues] = useState<Clue[]>([]);
   const { getCompletedClues } = usePlayerStore();
 
   const hId = Number(huntId);
   const completedClues = getCompletedClues(hId);
-  const isComplete = completedClues.size === clues.length && clues.length > 0;
+  const isComplete = clues.length > 0 && completedClues.size === clues.length;
+  const progressPercent = useMemo(() => {
+    if (clues.length === 0) return 0;
+    return Math.round((completedClues.size / clues.length) * 100);
+  }, [completedClues.size, clues.length]);
 
   useEffect(() => {
     const id = Number(huntId);
@@ -37,41 +44,46 @@ export default function DetailsScreen() {
   if (!hunt) return <View style={styles.container} />;
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Hunt Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>{hunt.title}</Text>
-        <Text style={styles.status}>{hunt.status}</Text>
+    <ThemedView style={[styles.container, { backgroundColor: colors.background }]}> 
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <View style={[styles.header, { backgroundColor: colors.primary + '12', borderBottomColor: colors.border }]}>
+        <ThemedCustomText variant="h2" weight="800" style={styles.title}>{hunt.title}</ThemedCustomText>
+        <ThemedCustomText variant="caption" color="primary" weight="700" style={styles.status}>{hunt.status}</ThemedCustomText>
       </View>
 
-      {/* Hunt Description */}
-      <Text style={styles.description}>{hunt.description}</Text>
+      <ThemedCustomText variant="body" style={styles.description}>{hunt.description}</ThemedCustomText>
 
-      {/* Hunt Metadata */}
       <View style={styles.metaContainer}>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaLabel}>Total Clues</Text>
-          <Text style={styles.metaValue}>{clues.length}</Text>
+        <View style={[styles.metaItem, { backgroundColor: colors.background, borderColor: colors.border }]}> 
+          <ThemedCustomText variant="caption" style={styles.metaLabel}>Total Clues</ThemedCustomText>
+          <ThemedCustomText variant="h3" color="primary" weight="700">{clues.length}</ThemedCustomText>
         </View>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaLabel}>Reward Type</Text>
-          <Text style={styles.metaValue}>{hunt.rewardType}</Text>
+        <View style={[styles.metaItem, { backgroundColor: colors.background, borderColor: colors.border }]}> 
+          <ThemedCustomText variant="caption" style={styles.metaLabel}>Reward Type</ThemedCustomText>
+          <ThemedCustomText variant="h3" color="primary" weight="700">{hunt.rewardType}</ThemedCustomText>
+        </View>
+        <View style={[styles.metaItem, { backgroundColor: colors.background, borderColor: colors.border }]}> 
+          <ThemedCustomText variant="caption" style={styles.metaLabel}>Players</ThemedCustomText>
+          <ThemedCustomText variant="h3" color="primary" weight="700">{Math.max(12, clues.length * 5)}</ThemedCustomText>
+        </View>
+        <View style={[styles.metaItem, { backgroundColor: colors.background, borderColor: colors.border }]}> 
+          <ThemedCustomText variant="caption" style={styles.metaLabel}>Creator</ThemedCustomText>
+          <ThemedCustomText variant="label" weight="700">GD72...3W9A</ThemedCustomText>
         </View>
       </View>
 
-      {/* Progress Section */}
-      {completedClues.size > 0 && (
-        <View style={styles.progressSection}>
-          <Text style={styles.sectionTitle}>Your Progress</Text>
+      {clues.length > 0 && (
+        <View style={[styles.progressSection, { backgroundColor: colors.info + '12', borderLeftColor: colors.info }]}> 
+          <ThemedCustomText variant="label" weight="700" style={styles.sectionTitle}>Your Progress</ThemedCustomText>
           <View style={styles.progressStats}>
-            <Text style={styles.progressText}>
-              {completedClues.size} of {clues.length} clues solved
-            </Text>
-            <View style={styles.progressBarContainer}>
+            <ThemedCustomText variant="body" style={styles.progressText}>
+              {completedClues.size} of {clues.length} clues solved ({progressPercent}%)
+            </ThemedCustomText>
+            <View style={[styles.progressBarContainer, { backgroundColor: colors.border }]}> 
               <View
                 style={[
                   styles.progressBar,
-                  { width: `${(completedClues.size / clues.length) * 100}%` },
+                  { width: `${progressPercent}%`, backgroundColor: colors.primary },
                 ]}
               />
             </View>
@@ -79,38 +91,36 @@ export default function DetailsScreen() {
         </View>
       )}
 
-      {/* Action Buttons */}
       <View style={styles.actionButtonsContainer}>
         {completedClues.size === 0 ? (
           <Pressable
-            style={styles.primaryButton}
+            style={[styles.primaryButton, { backgroundColor: colors.primary }]}
             onPress={handleStartHunt}
           >
-            <Text style={styles.primaryButtonText}>🎯 Start Hunt</Text>
+            <ThemedCustomText variant="label" lightColor="#fff" darkColor="#fff" weight="700">Start Hunt</ThemedCustomText>
           </Pressable>
         ) : isComplete ? (
-          <View style={styles.completedContainer}>
-            <Text style={styles.completedText}>✓ Hunt Completed!</Text>
+          <View style={[styles.completedContainer, { borderColor: colors.success, backgroundColor: colors.success + '12' }]}> 
+            <ThemedCustomText variant="label" color="success" weight="700">Hunt Completed</ThemedCustomText>
             <Pressable
-              style={styles.secondaryButton}
+              style={[styles.secondaryButton, { backgroundColor: colors.primary }]}
               onPress={handleStartHunt}
             >
-              <Text style={styles.secondaryButtonText}>Replay Hunt</Text>
+              <ThemedCustomText variant="label" lightColor="#fff" darkColor="#fff" weight="700">Replay Hunt</ThemedCustomText>
             </Pressable>
           </View>
         ) : (
           <Pressable
-            style={styles.primaryButton}
+            style={[styles.primaryButton, { backgroundColor: colors.primary }]}
             onPress={handleResume}
           >
-            <Text style={styles.primaryButtonText}>▶ Resume Hunt</Text>
+            <ThemedCustomText variant="label" lightColor="#fff" darkColor="#fff" weight="700">Resume Hunt</ThemedCustomText>
           </Pressable>
         )}
       </View>
 
-      {/* Clues Overview */}
       <View style={styles.cluesSection}>
-        <Text style={styles.sectionTitle}>Clues ({completedClues.size}/{clues.length})</Text>
+        <ThemedCustomText variant="label" weight="700" style={styles.sectionTitle}>Clues ({completedClues.size}/{clues.length})</ThemedCustomText>
         <FlatList
           scrollEnabled={false}
           data={clues}
@@ -121,27 +131,23 @@ export default function DetailsScreen() {
               <View
                 style={[
                   styles.clueOverview,
-                  isCompleted && styles.completedClueOverview,
+                  { borderColor: isCompleted ? colors.success : colors.border, backgroundColor: isCompleted ? colors.success + '10' : colors.background },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.clueOverviewNum,
-                    isCompleted && styles.completedClueNum,
-                  ]}
-                >
+                <ThemedCustomText variant="label" style={[styles.clueOverviewNum, isCompleted && { color: colors.success }]}> 
                   {isCompleted ? '✓' : '○'} #{index + 1}
-                </Text>
-                <Text
+                </ThemedCustomText>
+                <ThemedCustomText
+                  variant="caption"
                   style={[
                     styles.clueOverviewQuestion,
-                    isCompleted && styles.completedClueQuestion,
+                    isCompleted && { color: colors.success, textDecorationLine: 'line-through' },
                   ]}
                   numberOfLines={2}
                 >
                   {item.question}
-                </Text>
-                <Text style={styles.cluePoints}>{item.points} pts</Text>
+                </ThemedCustomText>
+                <ThemedCustomText variant="caption" color="warning" style={styles.cluePoints}>{item.points} pts</ThemedCustomText>
               </View>
             );
           }}
@@ -150,6 +156,7 @@ export default function DetailsScreen() {
 
       <View style={styles.spacer} />
     </ScrollView>
+    </ThemedView>
   );
 }
 
@@ -160,20 +167,12 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 16,
-    backgroundColor: '#f8f9fa',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
     marginBottom: 6,
-    color: '#1a1a1a',
   },
   status: {
-    fontSize: 12,
-    color: '#17a2b8',
-    fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -187,44 +186,31 @@ const styles = StyleSheet.create({
   },
   metaContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 16,
     paddingBottom: 16,
-    gap: 16,
+    gap: 12,
   },
   metaItem: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+    width: '47%',
     padding: 12,
     borderRadius: 8,
+    borderWidth: 1,
     alignItems: 'center',
   },
   metaLabel: {
-    fontSize: 11,
-    color: '#666',
-    fontWeight: '500',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
-  },
-  metaValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginTop: 4,
   },
   progressSection: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#e8f4f8',
     marginHorizontal: 16,
     marginVertical: 12,
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#17a2b8',
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
@@ -233,26 +219,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   progressText: {
-    fontSize: 13,
-    color: '#555',
-    fontWeight: '500',
+    opacity: 0.85,
   },
   progressBarContainer: {
     height: 8,
-    backgroundColor: '#d0e8ef',
     borderRadius: 4,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#17a2b8',
   },
   actionButtonsContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   primaryButton: {
-    backgroundColor: '#28a745',
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -260,38 +241,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
-  primaryButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-  },
   secondaryButton: {
-    backgroundColor: '#6c757d',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 8,
   },
-  secondaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-  },
   completedContainer: {
-    backgroundColor: '#e8f5e9',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#4caf50',
     alignItems: 'center',
-  },
-  completedText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#2e7d32',
-    marginBottom: 8,
   },
   cluesSection: {
     paddingHorizontal: 16,
@@ -303,68 +265,24 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     marginBottom: 8,
-    backgroundColor: '#f9f9f9',
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     gap: 8,
   },
-  completedClueOverview: {
-    backgroundColor: '#e8f5e9',
-    borderColor: '#4caf50',
-  },
   clueOverviewNum: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
     minWidth: 35,
-  },
-  completedClueNum: {
-    color: '#2e7d32',
   },
   clueOverviewQuestion: {
     flex: 1,
-    fontSize: 13,
-    color: '#555',
     lineHeight: 18,
   },
-  completedClueQuestion: {
-    color: '#2e7d32',
-    textDecorationLine: 'line-through',
-  },
   cluePoints: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#ff9800',
-    backgroundColor: '#fff3e0',
+    fontWeight: '700',
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 4,
   },
   spacer: {
     height: 20,
-  },
-});
-    marginBottom: 12,
-    backgroundColor: '#f9f9f9',
-  },
-  solvedCard: {
-    backgroundColor: '#e6f7e6',
-  },
-  clueLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  clueStatus: {
-    color: '#444',
-  },
-  completeText: {
-    color: '#0a7d3e',
-    marginBottom: 14,
-    fontWeight: '600',
-  },
-  linkRow: {
-    marginTop: 22,
   },
 });

@@ -7,7 +7,7 @@ import {
   PressableProps,
   ActivityIndicator,
 } from 'react-native';
-import { useTheme } from '../providers/ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { ThemedCustomText } from './ThemedCustomText';
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
@@ -114,7 +114,7 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
       style={[
         containerStyle,
         pressed && !disabled && { opacity: 0.8 },
-        Array.isArray(style) ? StyleSheet.flatten(style) : style,
+        Array.isArray(style) ? StyleSheet.flatten(style as any) : (style as any),
       ]}
       {...otherProps}
     >

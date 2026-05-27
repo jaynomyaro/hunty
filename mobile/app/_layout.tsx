@@ -1,21 +1,16 @@
 import { useCallback, useEffect } from 'react';
-import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useEffect } from 'react';
-import { BackHandler, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Stack, type ErrorBoundaryProps, useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFonts } from 'expo-font';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { hideSplashScreen, initializeSplashScreen } from '@utils/splashScreenManager';
 import { ThemeProvider, useTheme } from '@providers/ThemeProvider';
 import ReactQueryProvider from '@providers/ReactQueryProvider';
-import { ThemedCustomText, ThemedButton } from '@components/themed';
-import { useBackHandler } from '../hooks/useBackHandler';
-import { MemoryDiagnosticsOverlay } from '../components/MemoryDiagnosticsOverlay';
+import { ThemedButton, ThemedCustomText } from '@components/themed';
+import { useFonts } from '@app/hooks/useFonts';
+import { useBackHandler } from '@hooks/useBackHandler';
+import { MemoryDiagnosticsOverlay } from '@components/MemoryDiagnosticsOverlay';
 import { StackHeader } from '@components/navigation/StackHeader';
 import { Sentry, initializeSentry } from '@config/sentry';
-
-initializeSplashScreen();
-initializeSentry();
 
 initializeSplashScreen();
 initializeSentry();
@@ -31,8 +26,6 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'bottom', 'left']}>
         <View style={styles.errorContainer}>
-          <ThemedCustomText variant="h2">Something went wrong</ThemedCustomText>
-          <ThemedCustomText variant="body">{error.message}</ThemedCustomText>
           <ThemedCustomText variant="h2" style={styles.errorTitle}>
             Something went wrong
           </ThemedCustomText>
@@ -43,22 +36,6 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         </View>
       </SafeAreaView>
     </SafeAreaProvider>
-    <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'bottom', 'left']}>
-      <View style={styles.errorContainer}>
-        <ThemedCustomText variant="h2" style={styles.errorTitle}>
-          Something went wrong
-        </ThemedCustomText>
-        <ThemedCustomText variant="body" style={styles.errorMessage}>
-          {error.message || 'Unexpected navigation error.'}
-        </ThemedCustomText>
-        <ThemedButton
-          text="Try again"
-          onPress={retry}
-          variant="primary"
-          size="md"
-        />
-      </View>
-    </SafeAreaView>
   );
 }
 
@@ -66,7 +43,9 @@ export default function RootLayout() {
   return (
     <ReactQueryProvider>
       <ThemeProvider>
-        <RootLayoutNav />
+        <SafeAreaProvider>
+          <RootLayoutNav />
+        </SafeAreaProvider>
       </ThemeProvider>
     </ReactQueryProvider>
   );
@@ -75,28 +54,15 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
-  const [loaded, error] = useFonts();
+  const [fontsLoaded, fontError] = useFonts();
 
   useEffect(() => {
-    if (loaded || error) hideSplashScreen();
-  }, [loaded, error]);
+    if (fontsLoaded || fontError) {
+      void hideSplashScreen();
+    }
+  }, [fontsLoaded, fontError]);
 
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (router.canGoBack()) {
-        router.back();
-        return true;
-      }
-      return false;
-    });
-    return () => backHandler.remove();
-  }, [router]);
-
-  if (!loaded && !error) return null;
-  }, [router]);
-
-  if (!loaded && !error) return null;
-  const backAction = useCallback(() => {
+  const handleBackPress = useCallback(() => {
     if (router.canGoBack()) {
       router.back();
       return true;
@@ -105,54 +71,33 @@ function RootLayoutNav() {
     return false;
   }, [router]);
 
-  useBackHandler(backAction);
+  useBackHandler(handleBackPress);
 
-  if (!loaded && !error) {
+  if (!fontsLoaded && !fontError) {
     return null;
   }
 
   return (
-    <SafeAreaView 
-      style={[styles.safeArea, { backgroundColor: colors.background }]} 
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.background }]}
       edges={['top', 'right', 'bottom', 'left']}
     >
       <Stack
         screenOptions={{
-          headerStyle: {
-            backgroundColor: colors.primary,
-          },
+          header: (props) => <StackHeader {...props} />,
           headerTintColor: '#ffffff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-            color: '#ffffff',
-          },
           contentStyle: { backgroundColor: colors.background },
           statusBarStyle: isDark ? 'light' : 'dark',
         }}
-      />
-    </SafeAreaView>
-    <SafeAreaProvider>
-      <SafeAreaView
-        style={[styles.safeArea, { backgroundColor: colors.background }]}
-        edges={['top', 'right', 'bottom', 'left']}
       >
-        <Stack
-          screenOptions={{
-            header: (props) => <StackHeader {...props} />,
-            headerTintColor: '#ffffff',
-            contentStyle: { backgroundColor: colors.background },
-            statusBarStyle: isDark ? 'light' : 'dark',
-          }}
-        />
-        <MemoryDiagnosticsOverlay />
-        >
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="hunt/[id]" options={{ title: 'Hunt Details' }} />
-          <Stack.Screen name="details" options={{ title: 'Details' }} />
-          <Stack.Screen name="nested" options={{ title: 'Nested' }} />
-        </Stack>
-      </SafeAreaView>
-    </SafeAreaProvider>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="hunt/[id]" options={{ title: 'Hunt Details' }} />
+        <Stack.Screen name="transaction/pending" options={{ title: 'Transaction Pending' }} />
+        <Stack.Screen name="details" options={{ title: 'Details' }} />
+        <Stack.Screen name="nested" options={{ title: 'Nested' }} />
+      </Stack>
+      <MemoryDiagnosticsOverlay />
+    </SafeAreaView>
   );
 }
 

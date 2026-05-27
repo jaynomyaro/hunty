@@ -3,7 +3,7 @@
  * All shared interfaces and types live here — import from "@/lib/types".
  */
 
-import type { ReactNode } from "react"
+type ReactNode = unknown
 
 // ─── Hunt ────────────────────────────────────────────────────────────────────
 

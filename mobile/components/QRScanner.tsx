@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { X } from 'lucide-react-native';
 import { useTheme } from '@react-navigation/native';
 
 interface QRScannerProps {
@@ -69,7 +68,7 @@ export const QRScanner: React.FC<QRScannerProps> = ({
             style={styles.closeButton}
             onPress={onClose}
           >
-            <X width={24} height={24} color={colors.text} />
+            <Text style={[styles.closeButtonText, { color: colors.text }]}>×</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -93,7 +92,7 @@ export const QRScanner: React.FC<QRScannerProps> = ({
             style={styles.closeButton}
             onPress={onClose}
           >
-            <X width={24} height={24} color={colors.text} />
+            <Text style={[styles.closeButtonText, { color: colors.text }]}>×</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -146,7 +145,7 @@ export const QRScanner: React.FC<QRScannerProps> = ({
           style={styles.headerCloseButton}
           onPress={onClose}
         >
-          <X width={28} height={28} color="white" />
+          <Text style={styles.headerCloseText}>×</Text>
         </TouchableOpacity>
       </View>
 
@@ -299,6 +298,17 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
     borderRadius: 50,
+  },
+  closeButtonText: {
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 24,
+  },
+  headerCloseText: {
+    color: 'white',
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 28,
   },
   loadingIndicator: {
     ...StyleSheet.absoluteFillObject,

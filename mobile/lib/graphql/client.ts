@@ -1,4 +1,4 @@
-import getEnvVars from '@config/env';
+import env from '@config/env';
 
 export interface GraphQLResponse<T> {
   data?: T;
@@ -9,7 +9,7 @@ export async function graphqlRequest<T>(
   query: string,
   variables?: Record<string, unknown>,
 ): Promise<T> {
-  const { graphqlUrl } = getEnvVars();
+  const { graphqlUrl } = env;
 
   const response = await fetch(graphqlUrl, {
     method: 'POST',

@@ -61,9 +61,9 @@ export const useWalletStore = create<WalletState>()(
         removeItem: async (key: string) => {
           await SecureStore.deleteItemAsync(key);
         },
-      },
+      } as any,
       // Only persist the address — balance is fetched on demand
-      partialize: (state) => ({ walletAddress: state.walletAddress }),
+      partialize: (state) => ({ walletAddress: state.walletAddress } as any),
     },
   ),
 );
@@ -154,9 +154,9 @@ export const usePlayerStore = create<PlayerState>()(
           const converted = {
             ...parsed,
             completedClues: Object.fromEntries(
-              Object.entries(parsed.completedClues).map(([k, v]: [string, Set<number>]) => [
+              Object.entries(parsed.completedClues as Record<string, unknown>).map(([k, v]) => [
                 k,
-                Array.from(v),
+                Array.from((v as Set<number>) ?? []),
               ]),
             ),
           };
@@ -165,7 +165,7 @@ export const usePlayerStore = create<PlayerState>()(
         removeItem: async (key: string) => {
           await SecureStore.deleteItemAsync(key);
         },
-      },
+      } as any,
     },
   ),
 );

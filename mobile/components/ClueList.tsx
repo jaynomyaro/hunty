@@ -8,7 +8,6 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
-import { Camera, ChevronRight } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedView, ThemedCustomText } from './themed';
 
@@ -97,12 +96,7 @@ export const ClueList: React.FC<ClueListProps> = ({
         )}
 
         {!isSolved && (
-          <ChevronRight
-            width={20}
-            height={20}
-            color={isActive ? 'white' : '#9CA3AF'}
-            style={styles.chevron}
-          />
+          <Text style={[styles.chevronText, { color: isActive ? 'white' : '#9CA3AF' }]}>›</Text>
         )}
       </TouchableOpacity>
     );
@@ -126,7 +120,7 @@ export const ClueList: React.FC<ClueListProps> = ({
             end={{ x: 1, y: 1 }}
             style={styles.scanButtonGradient}
           >
-            <Camera width={20} height={20} color="white" />
+            <Text style={styles.scanIcon}>◉</Text>
             <Text style={styles.scanButtonText}>Scan QR</Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -178,6 +172,11 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+  },
+  scanIcon: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
   },
   listContent: {
     paddingHorizontal: 12,
@@ -267,5 +266,10 @@ const styles = StyleSheet.create({
   },
   chevron: {
     marginLeft: 8,
+  },
+  chevronText: {
+    marginLeft: 8,
+    fontSize: 20,
+    fontWeight: '700',
   },
 });
