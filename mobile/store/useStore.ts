@@ -24,11 +24,15 @@ interface WalletState {
   isConnected: boolean;
   /** Connected wallet network. Hunty mobile requires testnet for signing flows. */
   network: 'testnet' | 'mainnet' | 'unknown';
+  /** Optional public G-address used for read-only profile/history access. */
+  watchOnlyAddress: string;
 
   // Actions
   setWallet: (address: string) => void;
   setBalance: (balance: string | null) => void;
   setNetwork: (network: 'testnet' | 'mainnet' | 'unknown') => void;
+  setWatchOnlyAddress: (address: string) => void;
+  clearWatchOnlyAddress: () => void;
   clearWallet: () => void;
 }
 
@@ -42,6 +46,7 @@ export const useWalletStore = create<WalletState>()(
       walletBalance: null,
       isConnected: false,
       network: 'unknown',
+      watchOnlyAddress: '',
 
       setWallet: (address) =>
         set({ walletAddress: address, isConnected: Boolean(address) }),
@@ -49,6 +54,10 @@ export const useWalletStore = create<WalletState>()(
       setBalance: (balance) => set({ walletBalance: balance }),
 
       setNetwork: (network) => set({ network }),
+
+      setWatchOnlyAddress: (address) => set({ watchOnlyAddress: address.trim() }),
+
+      clearWatchOnlyAddress: () => set({ watchOnlyAddress: '' }),
 
       clearWallet: () =>
         set({ walletAddress: "", walletBalance: null, isConnected: false, network: 'unknown' }),
@@ -69,7 +78,11 @@ export const useWalletStore = create<WalletState>()(
         },
       } as any,
       // Persist wallet identity + network; balance is fetched on demand.
-      partialize: (state) => ({ walletAddress: state.walletAddress, network: state.network } as any),
+      partialize: (state) => ({
+        walletAddress: state.walletAddress,
+        network: state.network,
+        watchOnlyAddress: state.watchOnlyAddress,
+      } as any),
     },
   ),
 );

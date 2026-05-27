@@ -105,17 +105,19 @@ async function fetchPlayerRewards(_address: string): Promise<NftRewardDetail[]> 
 
 export default function ProfileScreen() {
   const { colors } = useTheme();
-  const { walletAddress, isConnected } = useWalletStore();
+  const { walletAddress, isConnected, watchOnlyAddress } = useWalletStore();
   const [hunts, setHunts] = useState<PlayerHuntProgress[]>([]);
   const [nftRewards, setNftRewards] = useState<NftRewardDetail[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const displayAddress = walletAddress ? shortenAddress(walletAddress) : "Not connected";
+  const activeAddress = isConnected ? walletAddress : watchOnlyAddress;
+  const usingWatchOnly = !isConnected && Boolean(watchOnlyAddress);
+  const displayAddress = activeAddress ? shortenAddress(activeAddress) : "Not connected";
 
   const loadProfileData = async () => {
-    if (!isConnected || !walletAddress) {
+    if (!activeAddress) {
       setHunts([]);
       setNftRewards([]);
       return;
@@ -126,8 +128,8 @@ export default function ProfileScreen() {
 
     try {
       const [huntsData, rewardsData] = await Promise.all([
-        fetchPlayerHunts(walletAddress),
-        fetchPlayerRewards(walletAddress),
+        fetchPlayerHunts(activeAddress),
+        fetchPlayerRewards(activeAddress),
       ]);
       setHunts(huntsData);
       setNftRewards(rewardsData);
@@ -140,7 +142,7 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     loadProfileData();
-  }, [isConnected, walletAddress]);
+  }, [activeAddress]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -182,7 +184,7 @@ export default function ProfileScreen() {
   const completedHuntsList = hunts.filter((h) => h.status === "Completed");
   const inProgressHuntsList = hunts.filter((h) => h.status === "In-Progress");
 
-  if (!isConnected || !walletAddress) {
+  if (!activeAddress) {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.emptyContainer}>
@@ -191,7 +193,7 @@ export default function ProfileScreen() {
             Your profile uses the connected Stellar address to load hunts you've played and aggregate your points across games.
           </ThemedCustomText>
           <ThemedCustomText variant="caption" style={styles.emptyHint}>
-            Use the Connect Wallet button in the Settings tab to get started.
+            Use the Connect Wallet button or add a watch-only address in Settings.
           </ThemedCustomText>
         </View>
       </ThemedView>
@@ -213,7 +215,12 @@ export default function ProfileScreen() {
             View your hunt history, progress, and total points earned.
           </ThemedCustomText>
           <View style={[styles.walletCard, { backgroundColor: colors.primary + "10", borderColor: colors.border }]}>
-            <ThemedCustomText variant="caption" style={styles.walletLabel}>Connected Wallet</ThemedCustomText>
+            <ThemedCustomText variant="caption" style={styles.walletLabel}>
+              {usingWatchOnly ? 'Watch-only Address' : 'Connected Wallet'}
+            </ThemedCustomText>
+            {usingWatchOnly ? (
+              <ThemedCustomText variant="caption" color="info">Watch-only mode</ThemedCustomText>
+            ) : null}
             <ThemedCustomText variant="label" weight="600" style={styles.walletAddress}>
               {displayAddress}
             </ThemedCustomText>
