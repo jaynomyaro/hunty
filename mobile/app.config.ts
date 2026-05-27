@@ -37,11 +37,11 @@ export default {
     version: "1.0.0",
     orientation: "portrait",
     icon: config.icon,
-    userInterfaceStyle: "light",
+    userInterfaceStyle: "automatic",
     splash: {
       image: "./assets/splash.png",
       resizeMode: "contain",
-      backgroundColor: "#ffffff",
+      backgroundColor: "#1f2937",
     },
     ios: {
       bundleIdentifier: config.bundleId,
@@ -51,7 +51,7 @@ export default {
       package: config.androidPackage,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#ffffff",
+        backgroundColor: "#1f2937",
       },
     },
     updates: {

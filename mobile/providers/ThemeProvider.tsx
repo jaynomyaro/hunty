@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type Theme = 'light' | 'dark';
@@ -93,7 +93,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const colors = isDark ? darkColors : lightColors;
 
   if (!mounted) {
-    return null;
+    // Render an opaque background matching the system color scheme to prevent
+    // a white flash before the async theme preference is resolved.
+    const bg = systemColorScheme === 'dark' ? darkColors.background : lightColors.background;
+    return <View style={{ flex: 1, backgroundColor: bg }} />;
   }
 
   return (
