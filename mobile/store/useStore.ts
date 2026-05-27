@@ -22,10 +22,13 @@ interface WalletState {
   walletBalance: string | null;
   /** Whether a wallet is currently connected */
   isConnected: boolean;
+  /** Connected wallet network. Hunty mobile requires testnet for signing flows. */
+  network: 'testnet' | 'mainnet' | 'unknown';
 
   // Actions
   setWallet: (address: string) => void;
   setBalance: (balance: string | null) => void;
+  setNetwork: (network: 'testnet' | 'mainnet' | 'unknown') => void;
   clearWallet: () => void;
 }
 
@@ -38,14 +41,17 @@ export const useWalletStore = create<WalletState>()(
       walletAddress: "",
       walletBalance: null,
       isConnected: false,
+      network: 'unknown',
 
       setWallet: (address) =>
         set({ walletAddress: address, isConnected: Boolean(address) }),
 
       setBalance: (balance) => set({ walletBalance: balance }),
 
+      setNetwork: (network) => set({ network }),
+
       clearWallet: () =>
-        set({ walletAddress: "", walletBalance: null, isConnected: false }),
+        set({ walletAddress: "", walletBalance: null, isConnected: false, network: 'unknown' }),
     }),
     {
       name: "hunty-wallet",
@@ -62,8 +68,8 @@ export const useWalletStore = create<WalletState>()(
           await SecureStore.deleteItemAsync(key);
         },
       } as any,
-      // Only persist the address — balance is fetched on demand
-      partialize: (state) => ({ walletAddress: state.walletAddress } as any),
+      // Persist wallet identity + network; balance is fetched on demand.
+      partialize: (state) => ({ walletAddress: state.walletAddress, network: state.network } as any),
     },
   ),
 );

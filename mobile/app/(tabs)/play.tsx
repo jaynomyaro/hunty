@@ -4,12 +4,15 @@ import { useRouter } from 'expo-router';
 import { ThemedButton, ThemedCustomText, ThemedView } from '@components/themed';
 import { useTheme } from '@providers/ThemeProvider';
 import { getHuntClues } from '@store/huntStore';
-import { usePlayerStore } from '@store/useStore';
+import { usePlayerStore, useWalletStore } from '@store/useStore';
 import type { Clue } from '@lib/types';
+import { useToast } from '@providers/ToastProvider';
 
 export default function PlayScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { showToast } = useToast();
+  const { network } = useWalletStore();
   const {
     currentProgress,
     updateClueIndex,
@@ -63,6 +66,15 @@ export default function PlayScreen() {
 
   const handleSubmit = () => {
     if (!activeClue || isSubmitting) {
+      return;
+    }
+
+    if (network === 'mainnet') {
+      showToast({
+        message: 'Switch wallet to Stellar Testnet before submitting final proof.',
+        type: 'warning',
+      });
+      router.push('/network/switch');
       return;
     }
 

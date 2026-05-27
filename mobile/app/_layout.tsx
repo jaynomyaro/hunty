@@ -15,6 +15,7 @@ import { MemoryDiagnosticsOverlay } from '@components/MemoryDiagnosticsOverlay';
 import { StackHeader } from '@components/navigation/StackHeader';
 import { Sentry, initializeSentry } from '@config/sentry';
 import { classifyWalletTxError } from '@lib/walletErrors';
+import { useWalletStore } from '@store/useStore';
 
 initializeSplashScreen();
 initializeSentry();
@@ -60,6 +61,7 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { setNetwork } = useWalletStore();
   const { colors, isDark } = useTheme();
   const [fontsLoaded, fontError] = useFonts();
   const [onboardingResolved, setOnboardingResolved] = useState(false);
@@ -112,6 +114,13 @@ function RootLayoutNav() {
 
       const status = String(queryParams?.status ?? '').toLowerCase();
       const rawError = queryParams?.error ?? queryParams?.error_description ?? queryParams?.message;
+      const callbackNetwork = String(queryParams?.network ?? queryParams?.chain ?? '').toLowerCase();
+
+      if (callbackNetwork.includes('main')) {
+        setNetwork('mainnet');
+      } else if (callbackNetwork.includes('test')) {
+        setNetwork('testnet');
+      }
 
       if (status === 'error' || rawError) {
         const parsed = classifyWalletTxError(rawError);
@@ -145,7 +154,7 @@ function RootLayoutNav() {
     });
 
     return () => subscription.remove();
-  }, [router, showToast]);
+  }, [router, setNetwork, showToast]);
 
   if ((!fontsLoaded && !fontError) || !onboardingResolved) {
     return null;
@@ -167,6 +176,7 @@ function RootLayoutNav() {
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="hunt/[id]" options={{ title: 'Hunt Details' }} />
+        <Stack.Screen name="network/switch" options={{ title: 'Switch Network' }} />
         <Stack.Screen name="transaction/pending" options={{ title: 'Transaction Pending' }} />
         <Stack.Screen name="details" options={{ title: 'Details' }} />
         <Stack.Screen name="nested" options={{ title: 'Nested' }} />

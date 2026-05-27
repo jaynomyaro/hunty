@@ -4,12 +4,15 @@ import { useRouter } from 'expo-router';
 import { ThemedButton, ThemedCustomText, ThemedView } from '@components/themed';
 import { useTheme } from '@providers/ThemeProvider';
 import { getAllHunts } from '@store/huntStore';
-import { usePlayerStore } from '@store/useStore';
+import { usePlayerStore, useWalletStore } from '@store/useStore';
+import { useToast } from '@providers/ToastProvider';
 import type { StoredHunt } from '@lib/types';
 
 export default function HuntsScreen() {
   const { colors } = useTheme();
+  const { showToast } = useToast();
   const { currentProgress, setProgress } = usePlayerStore();
+  const { network } = useWalletStore();
   const router = useRouter();
   const [hunts, setHunts] = useState<StoredHunt[]>([]);
   const [loadingHuntId, setLoadingHuntId] = useState<number | null>(null);
@@ -22,6 +25,15 @@ export default function HuntsScreen() {
 
   const handleJoinHunt = (hunt: StoredHunt) => {
     if (loadingHuntId !== null) return;
+
+    if (network === 'mainnet') {
+      showToast({
+        message: 'Switch wallet to Stellar Testnet to join hunts.',
+        type: 'warning',
+      });
+      router.push('/network/switch');
+      return;
+    }
 
     setLoadingHuntId(hunt.id);
 
