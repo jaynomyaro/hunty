@@ -80,25 +80,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!mountedRef.current) return;
         if (saved === "light" || saved === "dark" || saved === "system") {
           setPreference(saved);
-
-  useEffect(() => {
-    const loadTheme = async () => {
-      try {
-        const savedTheme = await AsyncStorage.getItem('theme');
-        if (savedTheme) {
-          setTheme(savedTheme as Theme);
-        } else if (systemColorScheme) {
-          setTheme(systemColorScheme === 'dark' ? 'dark' : 'light');
-        }
-      } catch (error) {
-        if (__DEV__) {
-          console.warn('Failed to load theme preference:', error);
         }
       } catch {
         if (__DEV__) console.warn("Failed to load theme preference");
       } finally {
         if (mountedRef.current) setMounted(true);
-        setMounted(true);
       }
     };
 
@@ -106,7 +92,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return () => {
       mountedRef.current = false;
-      setMounted(true);
     };
   }, []);
 
