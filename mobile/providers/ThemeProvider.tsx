@@ -10,6 +10,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type Theme = "light" | "dark";
 export type ThemePreference = "light" | "dark" | "system";
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useColorScheme, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export type Theme = 'light' | 'dark';
 
 interface ThemeContextType {
   theme: Theme;
@@ -112,6 +117,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const isDark = resolvedTheme === "dark";
 
+  if (!mounted) {
+    // Render an opaque background matching the system color scheme to prevent
+    // a white flash before the async theme preference is resolved.
+    const bg = systemColorScheme === 'dark' ? darkColors.background : lightColors.background;
+    return <View style={{ flex: 1, backgroundColor: bg }} />;
+  }
   if (!mounted) return null;
 
   return (
