@@ -8,6 +8,7 @@ import { usePlayerStore, useWalletStore } from '@store/useStore';
 import type { Clue } from '@lib/types';
 import { useToast } from '@providers/ToastProvider';
 import { ClueMarkdownRenderer } from '@components/ClueMarkdownRenderer';
+import { verifyClueGeofence } from '@/lib/locationGate';
 
 export default function PlayScreen() {
   const router = useRouter();
@@ -65,7 +66,7 @@ export default function PlayScreen() {
     return `Clue ${activeClueIndex + 1} of ${clues.length}`;
   }, [activeClueIndex, allSolved, clues.length]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!activeClue || isSubmitting) {
       return;
     }
@@ -79,33 +80,42 @@ export default function PlayScreen() {
       return;
     }
 
-    if (answer.trim().toLowerCase() !== activeClue.answer.toLowerCase()) {
-      setError('Incorrect answer. Review the clue and try again.');
-      return;
-    }
-
     setIsSubmitting(true);
     setError('');
 
-    const isLastClue = activeClueIndex === clues.length - 1;
-    markClueCompleted(currentProgress.hunt_id, activeClueIndex);
+    try {
+      const locationCheck = await verifyClueGeofence(activeClue);
+      if (!locationCheck.allowed) {
+        setError(locationCheck.reason);
+        return;
+      }
 
-    if (isLastClue) {
-      markCompleted();
-      router.push({
-        pathname: '/transaction/pending',
-        params: {
-          action: 'complete',
-          huntId: String(currentProgress.hunt_id),
-          huntTitle: 'Reward Dispatch',
-        },
-      });
-    } else {
-      updateClueIndex(activeClueIndex + 1);
+      if (answer.trim().toLowerCase() !== activeClue.answer.toLowerCase()) {
+        setError('Incorrect answer. Review the clue and try again.');
+        return;
+      }
+
+      const isLastClue = activeClueIndex === clues.length - 1;
+      markClueCompleted(currentProgress.hunt_id, activeClueIndex);
+
+      if (isLastClue) {
+        markCompleted();
+        router.push({
+          pathname: '/transaction/pending',
+          params: {
+            action: 'complete',
+            huntId: String(currentProgress.hunt_id),
+            huntTitle: 'Reward Dispatch',
+          },
+        });
+      } else {
+        updateClueIndex(activeClueIndex + 1);
+      }
+
+      setAnswer('');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setAnswer('');
-    setIsSubmitting(false);
   };
 
   return (
@@ -178,7 +188,7 @@ export default function PlayScreen() {
               </ThemedCustomText>
             ) : null}
             <ThemedButton
-              text={isSubmitting ? 'Submitting...' : 'Submit answer'}
+              text={isSubmitting ? 'Checking GPS...' : 'Submit answer'}
               loading={isSubmitting}
               fullWidth
               onPress={handleSubmit}

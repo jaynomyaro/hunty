@@ -16,7 +16,7 @@ import { useBackHandler } from '@hooks/useBackHandler';
 import { MemoryDiagnosticsOverlay } from '@components/MemoryDiagnosticsOverlay';
 import { StackHeader } from '@components/navigation/StackHeader';
 import { Sentry, initializeSentry } from '@config/sentry';
-import { classifyWalletTxError } from '@lib/walletErrors';
+import { classifyWalletTxError } from '@/lib/walletErrors';
 import { useWalletStore } from '@store/useStore';
 
 initializeSplashScreen();
@@ -26,7 +26,7 @@ export const unstable_settings = { initialRouteName: '(tabs)' };
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   useEffect(() => {
-    Sentry.Native.captureException(error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (

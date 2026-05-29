@@ -8,6 +8,7 @@ import { usePlayerStore } from '@store/useStore';
 import { CluesList } from '@components/CluesList';
 import type { Clue, StoredHunt } from '@lib/types';
 import { ClueMarkdownRenderer } from '@components/ClueMarkdownRenderer';
+import { verifyClueGeofence } from '@/lib/locationGate';
 
 export default function NestedScreen() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function NestedScreen() {
   const [hunt, setHunt] = useState<StoredHunt | null>(null);
   const [clues, setClues] = useState<Clue[]>([]);
   const [answer, setAnswer] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { markClueCompleted, getCompletedClues } = usePlayerStore();
   const [showCluesDropdown] = useState(true);
 
@@ -54,18 +56,31 @@ export default function NestedScreen() {
     }
   };
 
-  const handleSubmit = () => {
-    if (!clue) return;
-    if (answer.trim().toLowerCase() !== clue.answer.trim().toLowerCase()) {
-      Alert.alert("Incorrect", "Try again");
-      return;
-    }
-    markClueCompleted(hId, idx);
-    if (isLast) {
-      Alert.alert("Complete!", "You finished the hunt!");
-      router.replace(`/details?huntId=${hId}`);
-    } else {
-      navigateToClue(idx + 1);
+  const handleSubmit = async () => {
+    if (!clue || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      const locationCheck = await verifyClueGeofence(clue);
+      if (!locationCheck.allowed) {
+        Alert.alert("Location required", locationCheck.reason);
+        return;
+      }
+
+      if (answer.trim().toLowerCase() !== clue.answer.trim().toLowerCase()) {
+        Alert.alert("Incorrect", "Try again");
+        return;
+      }
+
+      markClueCompleted(hId, idx);
+      if (isLast) {
+        Alert.alert("Complete!", "You finished the hunt!");
+        router.replace(`/details?huntId=${hId}`);
+      } else {
+        navigateToClue(idx + 1);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -127,9 +142,17 @@ export default function NestedScreen() {
             </ThemedCustomText>
           </Pressable>
 
-          <Pressable style={[styles.submitButton, { backgroundColor: colors.primary }]} onPress={handleSubmit}>
+          <Pressable
+            style={[
+              styles.submitButton,
+              { backgroundColor: colors.primary },
+              isSubmitting && styles.disabledButton,
+            ]}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
             <ThemedCustomText variant="caption" lightColor="#fff" darkColor="#fff" weight="700">
-              {isLast ? '🏁 Finish' : '✓ Submit'}
+              {isSubmitting ? 'Checking GPS...' : isLast ? 'Finish' : 'Submit'}
             </ThemedCustomText>
           </Pressable>
 

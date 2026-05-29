@@ -48,6 +48,12 @@ export interface Clue {
   points: number
   hint?: string
   hintCost?: number
+  /** Center latitude for the clue's answer geofence. */
+  latitude?: number
+  /** Center longitude for the clue's answer geofence. */
+  longitude?: number
+  /** Allowed distance from the clue center in metres. Defaults to 100m. */
+  geofenceRadiusMeters?: number
 }
 
 export type ClueInfo = {
