@@ -26,6 +26,8 @@ export interface StoredHunt {
   is_private?: boolean
   /** Optional game cover CID/URL for hunt cards and sharing previews. */
   coverImageCid?: string
+  /** Active editorial banner showcase at the top of the Arcade. */
+  isFeaturedOfWeek?: boolean
 }
 
 export type HuntInfo = {
