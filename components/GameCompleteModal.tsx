@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import Image from "next/image"
 import confetti from "canvas-confetti"
 
 import { Button } from "@/components/ui/button"

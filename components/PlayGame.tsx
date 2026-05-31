@@ -34,7 +34,6 @@ export function PlayGame({
   onGameComplete,
   gameCompleteModal,
   huntId,
-  playerAddress,
 }: PlayGameProps) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [score, setScore] = useState(0);

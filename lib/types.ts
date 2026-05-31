@@ -195,6 +195,15 @@ export interface HuntCard {
   points?: number
 }
 
+export interface HuntDraft {
+  id: number
+  title: string
+  description: string
+  link: string
+  code: string
+  image?: string
+}
+
 // ─── Profile Dashboard Types ───────────────────────────────────────────────────
 
 export type HuntProgressStatus = "Completed" | "In-Progress"
