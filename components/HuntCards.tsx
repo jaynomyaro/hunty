@@ -28,6 +28,8 @@ interface HuntCardsProps {
   points?: number;
   /** Whether this clue has been solved. */
   solved?: boolean;
+  /** Whether the hunt has ended. */
+  huntEnded?: boolean;
 }
 
 const DEFAULT_POINTS = 10;
@@ -44,6 +46,7 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
   onScoreUpdate,
   points,
   solved = false,
+  huntEnded = false,
 }) => {
   const hunt = hunts && hunts.length > 0 ? hunts[0] : {} as Hunt;
   const [input, setInput] = useState("");
@@ -176,7 +179,7 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
     );
   }
 
-  const isLocked = !isActive || preview || isPending || solved;
+  const isLocked = !isActive || preview || isPending || solved || huntEnded;
 
   return (
     <div className={`rounded-xl sm:rounded-2xl shadow-lg w-full max-w-[400px] transition-all duration-300 relative print:shadow-none print:border-none print:max-w-none print:scale-100 print:m-0 print:opacity-100 ${isActive ? "sm:scale-105 border-2 border-blue-400 dark:border-blue-500" : preview ? "opacity-70" : "opacity-90"} bg-white dark:bg-slate-900`}>
@@ -278,16 +281,22 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
 
       {/* Feedback */}
       <div className="bg-white dark:bg-slate-900 rounded-b-xl sm:rounded-b-2xl -mt-4 pb-4 px-4 sm:px-6 min-h-[36px] print:hidden">
-        {success && (
+        {huntEnded && (
+          <div className="flex items-center justify-center gap-2 text-red-600 dark:text-red-400 font-bold text-sm sm:text-base">
+            <span>🏁</span>
+            Hunt Ended
+          </div>
+        )}
+        {!huntEnded && success && (
           <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400 font-bold text-sm sm:text-base animate-bounce">
             <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
             Solved!
           </div>
         )}
-        {!success && isPending && (
+        {!huntEnded && !success && isPending && (
           <p className="text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm">Submitting...</p>
         )}
-        {!success && !isPending && error && (
+        {!huntEnded && !success && !isPending && error && (
           <p className="text-center text-red-500 dark:text-red-400 font-semibold text-xs sm:text-sm">{error}</p>
         )}
       </div>
