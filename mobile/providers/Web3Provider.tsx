@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import SignClient from '@walletconnect/sign-client';
 import Constants from 'expo-constants';
 import { useWalletStore } from '@store/useStore';
+import { saveSession, loadSession, clearSession } from '@services/walletSession';
 
 type SessionInfo = {
   topic: string;
@@ -48,6 +49,22 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // #189 — Restore persisted session from SecureStore immediately on mount so
+  // the UI reflects the connected state before the WalletConnect SDK hydrates.
+  useEffect(() => {
+    let isCancelled = false;
+    const restorePersistedSession = async () => {
+      const persisted = await loadSession();
+      if (!isCancelled && mountedRef.current && persisted) {
+        setSession({ topic: persisted.topic, publicKey: persisted.publicKey, network: persisted.network });
+        setWallet(persisted.publicKey);
+        setNetwork(persisted.network.includes('main') ? 'mainnet' : 'testnet');
+      }
+    };
+    void restorePersistedSession();
+    return () => { isCancelled = true; };
+  }, [setWallet, setNetwork]);
+
   useEffect(() => {
     const projectId = getProjectId();
     if (!projectId) {
@@ -78,6 +95,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
           if (mountedRef.current) {
             setSession(null);
             clearWallet();
+            void clearSession();
           }
         });
 
@@ -85,6 +103,7 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
           if (mountedRef.current) {
             setSession(null);
             clearWallet();
+            void clearSession();
           }
         });
 
@@ -98,9 +117,12 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
             const net = parts.length >= 2 ? parts[1] : 'testnet';
 
             if (mountedRef.current) {
-              setSession({ topic: last.topic, publicKey: pubKey, network: net });
+              const sessionInfo: SessionInfo = { topic: last.topic, publicKey: pubKey, network: net };
+              setSession(sessionInfo);
               setWallet(pubKey);
               setNetwork(net.includes('main') ? 'mainnet' : 'testnet');
+              // Keep SecureStore in sync with the SDK-recovered session
+              void saveSession(sessionInfo);
             }
           }
         }
@@ -154,9 +176,12 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
       const net = parts.length >= 2 ? parts[1] : 'testnet';
 
       if (mountedRef.current) {
-        setSession({ topic: approvedSession.topic, publicKey: pubKey, network: net });
+        const sessionInfo: SessionInfo = { topic: approvedSession.topic, publicKey: pubKey, network: net };
+        setSession(sessionInfo);
         setWallet(pubKey);
         setNetwork(net.includes('main') ? 'mainnet' : 'testnet');
+        // #189 — Persist new session so it survives app restarts
+        void saveSession(sessionInfo);
       }
     } finally {
       if (mountedRef.current) {
@@ -183,6 +208,8 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
     if (mountedRef.current) {
       setSession(null);
       clearWallet();
+      // #189 — Remove persisted session on explicit user disconnect
+      void clearSession();
     }
   }, [session, clearWallet]);
 
