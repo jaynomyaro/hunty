@@ -119,6 +119,7 @@ export function Header({ balance = "0" }: { balance?: string }) {
                   <div className="p-2 flex flex-col gap-1">
                     <button
                       onClick={handleCopy}
+                      aria-label="Copy wallet address"
                       className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors text-left"
                     >
                       {copied ? (

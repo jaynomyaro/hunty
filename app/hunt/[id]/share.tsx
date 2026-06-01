@@ -213,7 +213,13 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
               </>
             )}
           </Button>
-          <Button variant="outline" size="icon" onClick={() => setQrOpen(true)} title="Show QR Code">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setQrOpen(true)}
+            title="Show QR Code"
+            aria-label="Show QR code for this hunt"
+          >
             <QrCode className="w-4 h-4" />
           </Button>
         </div>

@@ -85,6 +85,7 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
                 size="icon"
                 variant="ghost"
                 onClick={() => onUpdateReward(reward.place, reward.amount - 0.1)}
+                aria-label={`Decrease reward for place ${reward.place}`}
                 className="w-6 h-6 border-2 border-transparent bg-origin-border hover:opacity-80 rounded-lg"
                 style={{
                   background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(to right, #0C0C4F, #4A4AFF) border-box'
@@ -110,6 +111,7 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
                 size="icon"
                 variant="ghost"
                 onClick={() => onUpdateReward(reward.place, reward.amount + 0.1)}
+                aria-label={`Increase reward for place ${reward.place}`}
                 className="w-6 h-6 border-2 border-transparent bg-origin-border hover:opacity-80 rounded-lg"
                 style={{
                   background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(to right, #0C0C4F, #4A4AFF) border-box'
@@ -121,6 +123,7 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
             {onDeleteReward && (
               <Button 
                 variant="ghost" 
+                aria-label={`Delete reward for place ${reward.place}`}
                 className="w-8 h-8 p-3 bg-gradient-to-b from-[#FD0A44] to-[#932331] text-white rounded-lg ml-2 cursor-pointer hover:opacity-80"
                 onClick={() => onDeleteReward(reward.place)}
               >

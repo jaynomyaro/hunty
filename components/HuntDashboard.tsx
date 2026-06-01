@@ -369,7 +369,11 @@ export function HuntDashboard({
                     <CardTitle className="line-clamp-2 text-lg dark:text-white">{hunt.title}</CardTitle>
                     <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded-md text-xs text-slate-500 dark:text-slate-400 font-mono">
                       #{hunt.id}
-                      <button onClick={(e) => handleCopyId(e, hunt.id)} className="hover:text-slate-800 dark:hover:text-white transition-colors">
+                      <button
+                        onClick={(e) => handleCopyId(e, hunt.id)}
+                        aria-label={`Copy hunt ID ${hunt.id}`}
+                        className="hover:text-slate-800 dark:hover:text-white transition-colors"
+                      >
                         <Copy className="w-3 h-3" />
                       </button>
                     </div>
@@ -422,6 +426,7 @@ export function HuntDashboard({
                           #{hunt.id}
                           <button
                             onClick={(event) => handleCopyId(event, hunt.id)}
+                            aria-label={`Copy hunt ID ${hunt.id}`}
                             className="transition-colors hover:text-slate-800 dark:hover:text-white"
                           >
                             <Copy className="h-3 w-3" />
@@ -630,6 +635,7 @@ export function HuntDashboard({
                   variant="ghost"
                   size="icon"
                   onClick={() => removeClueRow(row.id)}
+                  aria-label={`Remove clue row ${index + 1}`}
                   disabled={clueRows.length === 1}
                   className="text-red-400 hover:text-red-600 disabled:opacity-30"
                 >
