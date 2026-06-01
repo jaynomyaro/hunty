@@ -68,7 +68,7 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
           <p className="text-sm font-medium text-blue-900">Total Prize Pool</p>
           <p className="text-lg font-semibold text-blue-950">
             {totalRewardXlm.toFixed(2)} XLM
-            {totalRewardUsd ? ` (${totalRewardUsd})` : ""}
+            {totalRewardUsd ? ` (≈ ${totalRewardUsd})` : ""}
           </p>
         </div>
       )}
@@ -98,10 +98,9 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
                 <div className="flex flex-col">
                   <span className="text-[16px] font-medium bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] text-transparent bg-clip-text">
                     {reward.amount.toPrecision(3)} XLM
-                  </span>
-                  {xlmUsdPrice != null && (
+                  </span>                    {xlmUsdPrice != null && (
                     <span className="text-[11px] text-slate-500">
-                      {currencyFormatter.format(reward.amount * xlmUsdPrice)}
+                      ≈ {currencyFormatter.format(reward.amount * xlmUsdPrice)}
                     </span>
                   )}
                 </div>

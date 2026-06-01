@@ -12,6 +12,7 @@ import { RewardsPanel } from "@/components/RewardsPanel"
 import { useQuery } from "@tanstack/react-query"
 import { checkRegistrationStatus } from "@/lib/contracts/player-registration"
 import { useRef, useState } from "react"
+import { useXlmUsdPrice } from "@/hooks/useXlmUsdPrice"
 import { AchievementCertificate } from "@/components/AchievementCertificate"
 import { downloadElementAsImage, shareOnTwitter, shareOnFarcaster } from "@/lib/downloadAsImage"
 import { Share2, Twitter, Download } from "lucide-react"
@@ -46,6 +47,17 @@ export function GameCompleteModal({
   huntId,
   playerAddress,
 }: GameCompleteModalProps) {
+  const { price: xlmUsdPrice } = useXlmUsdPrice();
+
+  const currencyFormatter = new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  });
+
+  const usdEquivalent =
+    xlmUsdPrice != null ? currencyFormatter.format(reward * xlmUsdPrice) : null;
+
   const certificateRef = useRef<HTMLDivElement>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [newAchievements, setNewAchievements] = useState<string[]>([])
@@ -138,13 +150,18 @@ export function GameCompleteModal({
           <div className="flex items-center justify-center gap-2 text-2xl">
             <span>🥇</span>
             <span className="bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] bg-clip-text text-transparent text-2xl font-bold">1st Place</span>
-          </div>
-
-          <div className="flex items-center justify-center gap-2 w-full">
+          </div>            <div className="flex items-center justify-center gap-2 w-full">
             <p className="bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] bg-clip-text text-transparent text-xl font-normal  mb-2">You won</p>
-            <div className="flex items-center justify-center gap-2 bg-[#e5e5eb] p-2 rounded-xl w-[230px]">
-              <Coin />
-              <span className="font-bold text-lg">{reward}</span>
+            <div className="flex flex-col items-center gap-1">
+              <div className="flex items-center justify-center gap-2 bg-[#e5e5eb] p-2 rounded-xl w-[230px]">
+                <Coin />
+                <span className="font-bold text-lg">{reward}</span>
+              </div>
+              {usdEquivalent && (
+                <span className="text-sm text-slate-500">
+                  ≈ {usdEquivalent}
+                </span>
+              )}
             </div>
           </div>
 
