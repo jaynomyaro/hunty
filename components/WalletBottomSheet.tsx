@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { 
   X, 
   ChevronRight, 
@@ -155,7 +156,7 @@ export function WalletBottomSheet({ isOpen, onClose, onConnect }: WalletBottomSh
                     <HelpCircle className="h-5 w-5 text-indigo-500" />
                     <span className="font-semibold text-slate-900 dark:text-white">New to Web3?</span>
                   </div>
-                  <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${showEducation ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={cn("h-5 w-5 text-slate-400 transition-transform", showEducation && 'rotate-180')} />
                 </button>
 
                 <AnimatePresence>

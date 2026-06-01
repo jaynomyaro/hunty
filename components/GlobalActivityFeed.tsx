@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react"
 import { Trophy, CheckCircle2, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import {
   type ActivityEvent,
   anonymizeAddress,
@@ -41,11 +42,12 @@ function ActivityItem({ event }: { event: ActivityEvent }) {
     >
       {/* Icon */}
       <div
-        className={`shrink-0 rounded-full p-1.5 ${
+        className={cn(
+          "shrink-0 rounded-full p-1.5",
           isCompleted
             ? "bg-gradient-to-br from-[#39A437] to-[#194F0C] text-white"
             : "bg-gradient-to-br from-[#3737A4] to-[#0C0C4F] text-white"
-        }`}
+        )}
       >
         {isCompleted ? (
           <Trophy className="w-3.5 h-3.5" />

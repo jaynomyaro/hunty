@@ -5,6 +5,7 @@ import { RARITY_COLORS, RARITY_BORDER_COLORS } from "@/lib/achievements/config"
 import { getAllAchievementsWithStatus } from "@/lib/achievements/service"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
 
 interface BadgeWallProps {
   playerAddress: string
@@ -62,11 +63,12 @@ export function BadgeWall({ playerAddress }: BadgeWallProps) {
               <Tooltip key={achievement.id}>
                 <TooltipTrigger asChild>
                   <div
-                    className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                    className={cn(
+                      "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all cursor-pointer",
                       achievement.earned
                         ? `bg-gradient-to-br ${RARITY_COLORS[achievement.rarity]} ${RARITY_BORDER_COLORS[achievement.rarity]} shadow-lg`
                         : "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 opacity-50"
-                    }`}
+                    )}
                   >
                     <div className="text-4xl mb-2">{achievement.icon}</div>
                     <div className="text-xs font-semibold text-center line-clamp-2 text-white dark:text-slate-900">

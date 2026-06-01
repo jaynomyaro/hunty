@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2, Loader2, Printer } from "lucide-react";
 import picture from "@/public/static-images/image1.png";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import sanitizeHtml from "@/lib/sanitizeHtml";
 import { submitAnswer, AnswerIncorrectError, pollTransaction } from "@/lib/contracts/hunt";
 import { resolveImageSrc, GATEWAY_COUNT } from "@/lib/ipfs";
@@ -162,7 +163,10 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
 
   if (isLoading) {
     return (
-      <div className={`rounded-xl sm:rounded-2xl shadow-lg w-full max-w-[400px] transition-all duration-300 ${isActive ? "sm:scale-105 border-2 border-blue-400" : preview ? "opacity-70" : "opacity-90"}`}>
+      <div className={cn(
+        "rounded-xl sm:rounded-2xl shadow-lg w-full max-w-[400px] transition-all duration-300",
+        isActive ? "sm:scale-105 border-2 border-blue-400" : preview ? "opacity-70" : "opacity-90"
+      )}>
         <div className="rounded-t-xl sm:rounded-t-2xl p-4 sm:p-6 bg-gradient-to-b from-[#3737A4] to-[#0C0C4F]">
           <div className="flex justify-end mb-2">
             <Skeleton className="h-3 sm:h-4 w-12 bg-white/20" />
@@ -183,7 +187,10 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
   const isLocked = !isActive || preview || isPending || solved || huntEnded;
 
   return (
-    <div className={`rounded-xl sm:rounded-2xl shadow-lg w-full max-w-[400px] transition-all duration-300 relative print:shadow-none print:border-none print:max-w-none print:scale-100 print:m-0 print:opacity-100 ${isActive ? "sm:scale-105 border-2 border-blue-400 dark:border-blue-500" : preview ? "opacity-70" : "opacity-90"} bg-white dark:bg-slate-900`}>
+    <div className={cn(
+      "rounded-xl sm:rounded-2xl shadow-lg w-full max-w-[400px] transition-all duration-300 relative print:shadow-none print:border-none print:max-w-none print:scale-100 print:m-0 print:opacity-100 bg-white dark:bg-slate-900",
+      isActive ? "sm:scale-105 border-2 border-blue-400 dark:border-blue-500" : preview ? "opacity-70" : "opacity-90"
+    )}>
       {solved && (
         <div className="absolute inset-0 bg-green-500/10 rounded-xl sm:rounded-2xl z-20 flex items-center justify-center pointer-events-none print:hidden">
           <CheckCircle2 className="w-12 sm:w-16 h-12 sm:h-16 text-green-500 opacity-60" />
@@ -259,14 +266,20 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
       <div className="bg-white dark:bg-slate-900 flex gap-2 p-4 sm:p-6 rounded-b-xl sm:rounded-b-2xl items-center print:hidden">
         <Input
           placeholder={isActive && !preview ? "Enter answer" : "Locked"}
-          className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-full text-sm transition-colors ${isLocked ? "bg-gray-100 dark:bg-slate-800 cursor-not-allowed" : "dark:bg-slate-950 dark:border-white/10"}`}
+          className={cn(
+            "flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-full text-sm transition-colors",
+            isLocked ? "bg-gray-100 dark:bg-slate-800 cursor-not-allowed" : "dark:bg-slate-950 dark:border-white/10"
+          )}
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           disabled={isLocked}
         />
         <Button
-          className={`bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] hover:bg-purple-700 text-white px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl transition-all duration-200 flex-shrink-0 ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
+          className={cn(
+            "bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] hover:bg-purple-700 text-white px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl transition-all duration-200 flex-shrink-0",
+            isLocked && "opacity-50 cursor-not-allowed"
+          )}
           onClick={handleUnlock}
           disabled={isLocked}
         >

@@ -2,6 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { getAllHunts } from "@/lib/huntStore"
+import { Trophy, ArrowRight, Star, Sparkles, Award, User } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Trophy, ArrowRight, Sparkles, Award, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -107,12 +109,14 @@ export function HuntOfTheWeekBanner() {
               {featuredHunt.cluesCount} {featuredHunt.cluesCount === 1 ? "Clue" : "Clues"}
             </span>
 
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${
+            <span className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border",
               featuredHunt.rewardType === "XLM" 
                 ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-100/50 dark:border-green-900/40" 
                 : featuredHunt.rewardType === "NFT" 
                   ? "bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-100/50 dark:border-purple-900/40" 
                   : "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-100/50 dark:border-amber-900/40"
+            )
             }`}>
               <Award className="h-3.5 w-3.5" />
               {featuredHunt.rewardType} Prize

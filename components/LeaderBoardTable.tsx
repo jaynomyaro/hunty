@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 import { get_hunt_leaderboard } from "@/lib/contracts/hunt"
 import Medal from "@/components/icons/Medal"
 import type { LeaderboardDisplayEntry } from "@/lib/types"
@@ -64,7 +65,7 @@ export function LeaderboardTable({ huntId, data: initialData, isLoading: initial
 
   if (error) {
     return (
-      <div className={`${containerClass} p-8 text-center bg-white dark:bg-slate-900 rounded-xl border border-red-200 dark:border-red-900/30`}>
+      <div className={cn(containerClass, "p-8 text-center bg-white dark:bg-slate-900 rounded-xl border border-red-200 dark:border-red-900/30")}>
         <p className="text-red-500 dark:text-red-400 font-medium">{error}</p>
         <button
           onClick={() => fetchLeaderboard()}
@@ -78,7 +79,7 @@ export function LeaderboardTable({ huntId, data: initialData, isLoading: initial
 
   if (!isLoading && data.length === 0) {
     return (
-      <div className={`${containerClass} p-12 text-center bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-700`}>
+      <div className={cn(containerClass, "p-12 text-center bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-700")}>
         <p className="text-slate-500 dark:text-slate-400 font-medium">No players on the leaderboard yet. Be the first!</p>
       </div>
     )

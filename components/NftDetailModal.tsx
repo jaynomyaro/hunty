@@ -11,6 +11,7 @@ import {
   DialogDescription 
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Calendar, Trophy, Zap, Share2, Download, ExternalLink } from "lucide-react"
 import { resolveImageSrc } from "@/lib/ipfs"
 import { formatISOString } from "@/lib/dateUtils"
@@ -61,7 +62,12 @@ export function NftDetailModal({ nft, isOpen, onClose }: NftDetailModalProps) {
               />
             </motion.div>
             <div className="absolute top-4 left-4">
-               <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${nft.claimed ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border border-amber-500/20"}`}>
+               <span className={cn(
+                 "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                 nft.claimed
+                   ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                   : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+               )}>
                 {nft.claimed ? "Verified" : "Unclaimed"}
               </span>
             </div>

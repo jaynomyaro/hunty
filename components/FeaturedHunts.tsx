@@ -6,6 +6,7 @@ import { Trophy, Clock, Sparkles, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { HuntCoverImage } from "@/components/HuntCoverImage"
+import { cn } from "@/lib/utils"
 
 function timeRemaining(endTime?: number): string {
   if (!endTime) return ""
@@ -51,11 +52,12 @@ export function FeaturedHunts() {
           {featured.map((hunt, idx) => (
             <div
               key={hunt.id}
-              className={`relative overflow-hidden rounded-2xl p-[2px] ${
+              className={cn(
+                "relative overflow-hidden rounded-2xl p-[2px]",
                 idx === 0
                   ? "bg-gradient-to-br from-amber-400 via-pink-500 to-[#3737A4]"
                   : "bg-gradient-to-br from-[#3737A4] to-[#0C0C4F]"
-              }`}
+              )}
             >
               <div className="relative h-full rounded-[14px] bg-white dark:bg-slate-900 p-5 flex flex-col">
                 {idx === 0 && (
@@ -83,13 +85,14 @@ export function FeaturedHunts() {
                     {hunt.cluesCount} {hunt.cluesCount === 1 ? "Clue" : "Clues"}
                   </span>
                   <span
-                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium ${
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium",
                       hunt.rewardType === "XLM"
                         ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400"
                         : hunt.rewardType === "NFT"
                           ? "bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400"
                           : "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400"
-                    }`}
+                    )}
                   >
                     {hunt.rewardType} Reward
                   </span>

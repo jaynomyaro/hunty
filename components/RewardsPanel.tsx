@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Plus, Minus } from "lucide-react"
 import Trash from "@/components/icons/trash"
 import Coin from "@/components/icons/Coin"
@@ -147,11 +148,12 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
           <Button
             onClick={handleClaim}
             disabled={claimed || isClaiming}
-            className={`px-8 py-3 rounded-full text-white font-bold text-lg w-full max-w-sm ${
-              claimed 
-                ? 'bg-gray-400 cursor-not-allowed' 
+            className={cn(
+              "px-8 py-3 rounded-full text-white font-bold text-lg w-full max-w-sm",
+              claimed
+                ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-gradient-to-b from-[#39A437] to-[#194F0C] hover:opacity-90'
-            }`}
+            )}
           >
             {claimed ? "Claimed" : isClaiming ? "Claiming..." : "Claim Prize"}
           </Button>
