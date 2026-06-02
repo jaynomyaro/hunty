@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner"
 import { ACHIEVEMENTS } from "@/lib/achievements/config"
 import { checkAndAwardAchievements } from "@/lib/achievements/service"
+import { logger } from "@/lib/logger"
 
 interface GameCompleteModalProps {
   isOpen: boolean

@@ -17,15 +17,12 @@ export default function CreatorStatsPage() {
   const router = useRouter()
   const huntId = typeof params.id === "string" ? parseInt(params.id, 10) : NaN
   const [title, setTitle] = useState<string>("")
-<<<<<<< HEAD
   const [viewCount, setViewCount] = useState<number | null>(null)
-=======
   const [endTime, setEndTime] = useState<number | undefined>()
   const [status, setStatus] = useState<string>("")
   const [isExtending, setIsExtending] = useState(false)
   const [extendHours, setExtendHours] = useState<string>("1")
   const { connected } = useWallet()
->>>>>>> 0bdfe90f97535e4117df95a95d7d43ba3189abc8
 
   const loadHunt = useCallback(() => {
     if (Number.isNaN(huntId)) return

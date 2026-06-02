@@ -5,6 +5,7 @@
  * Run with: npx tsx lib/contracts/__tests__/demo-registration-status.ts
  */
 
+/* eslint-disable no-console */
 import { checkRegistrationStatus, clearRegistrationCache } from '../player-registration'
 
 async function demonstrateRegistrationStatus() {

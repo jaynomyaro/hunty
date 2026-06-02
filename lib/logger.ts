@@ -12,9 +12,11 @@ const shouldLog = (level: LogLevel) => {
   return true
 }
 
-const getConsole = () => {
+type ConsoleRef = Record<LogLevel, (...args: unknown[]) => void>
+
+const getConsole = (): ConsoleRef | undefined => {
   if (typeof globalThis === "undefined") return undefined
-  return (globalThis as any).console as Record<LogLevel, (...args: unknown[]) => void> | undefined
+  return (globalThis as typeof globalThis & { console?: ConsoleRef }).console
 }
 
 const writeLog = (level: LogLevel, message: unknown, ...meta: unknown[]) => {

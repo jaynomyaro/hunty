@@ -126,7 +126,7 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
           keepalive: true,
         })
       } catch (error) {
-        console.warn("Hunt view analytics request failed", error)
+        // analytics failure should not affect the user experience
       }
     })()
   }, [hunt.id])
@@ -213,7 +213,13 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
               </>
             )}
           </Button>
-          <Button variant="outline" size="icon" onClick={() => setQrOpen(true)} title="Show QR Code">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setQrOpen(true)}
+            title="Show QR Code"
+            aria-label="Show QR code for this hunt"
+          >
             <QrCode className="w-4 h-4" />
           </Button>
         </div>

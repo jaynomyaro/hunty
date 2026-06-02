@@ -50,6 +50,8 @@ export type HuntInfo = {
 
 // ─── Clue ────────────────────────────────────────────────────────────────────
 
+export type ClueDifficulty = "Easy" | "Medium" | "Hard"
+
 export interface Clue {
   id: number
   huntId: number
@@ -58,6 +60,8 @@ export interface Clue {
   points: number
   hint?: string
   hintCost?: number
+  /** Optional difficulty tag set by the creator. */
+  difficulty?: ClueDifficulty
   /** Center latitude for the clue's answer geofence. */
   latitude?: number
   /** Center longitude for the clue's answer geofence. */
@@ -72,6 +76,7 @@ export type ClueInfo = {
   points: number
   hint?: string
   hintCost?: number
+  difficulty?: ClueDifficulty
 }
 
 export interface ClueRow {
@@ -81,6 +86,7 @@ export interface ClueRow {
   points: number
   hint?: string
   hintCost?: number
+  difficulty?: ClueDifficulty
 }
 
 // ─── Transaction Results ─────────────────────────────────────────────────────
@@ -201,6 +207,7 @@ export interface HuntCard {
   hint?: string
   hintCost?: number
   points?: number
+  difficulty?: ClueDifficulty
 }
 
 export interface HuntDraft {
@@ -210,6 +217,51 @@ export interface HuntDraft {
   link: string
   code: string
   image?: string
+}
+
+// ─── Player Count ────────────────────────────────────────────────────────────
+
+/**
+ * Player count above which a hunt is considered "Trending".
+ *
+ * A hunt whose registered player count is >= this value receives the
+ * 🔥 Trending badge on its card. Set to 50 as a reasonable signal of
+ * meaningful engagement without being too easy to trigger on small hunts.
+ *
+ * To tune: lower the value to badge more hunts (e.g. 20 for a new platform
+ * with low traffic); raise it to reserve the badge for genuinely popular hunts.
+ */
+export const TRENDING_PLAYER_THRESHOLD = 50
+
+/**
+ * How long a fetched player count is considered fresh (ms).
+ *
+ * After this TTL the next call to `usePlayerCount` / `usePlayerCounts` will
+ * re-scan localStorage and update the cache. The cache is module-level, so it
+ * resets on a full page reload — satisfying the "updates on each arcade page
+ * load" requirement without stale counts surviving navigation.
+ *
+ * Tradeoff: shorter TTL → fresher counts but more localStorage scans per
+ * session; longer TTL → fewer scans but counts may lag behind reality.
+ * 60 s is a reasonable default for a game arcade where registration activity
+ * is bursty rather than continuous.
+ */
+export const PLAYER_COUNT_CACHE_TTL_MS = 60_000
+
+export interface PlayerCountResult {
+  huntId: string
+  count: number
+  /**
+   * `true` when `count >= TRENDING_PLAYER_THRESHOLD`.
+   *
+   * Computed at fetch time and cached alongside the count, so the badge
+   * reflects the same snapshot as the displayed number. Re-evaluated on
+   * every cache miss (stale or absent entry).
+   */
+  isTrending: boolean
+  fetchedAt: number   // Date.now() at time of fetch
+  isLoading: boolean
+  error: string | null
 }
 
 // ─── Profile Dashboard Types ───────────────────────────────────────────────────

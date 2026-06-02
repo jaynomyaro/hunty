@@ -1,6 +1,7 @@
 import { promises as fs } from "fs"
 import crypto from "crypto"
 import path from "path"
+import { logger } from "@/lib/logger"
 
 export type HuntViewStats = {
   huntId: number
@@ -72,7 +73,7 @@ export async function recordHuntView(huntId: number): Promise<HuntViewStats> {
       })
     } catch (error) {
       // Privacy-preserving analytics should not break page rendering.
-      console.warn("Failed to forward hunt view analytics", error)
+      logger.warn("Failed to forward hunt view analytics", error)
     }
   }
 

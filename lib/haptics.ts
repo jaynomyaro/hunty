@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger"
+
 type NotificationType = "success" | "warning" | "error"
 type ImpactStyle = "light" | "medium" | "heavy"
 
@@ -28,7 +30,7 @@ async function loadHapticsModule(): Promise<HapticsModule | null> {
   cachedHapticsPromise = import(/* @vite-ignore */ expoHapticsModule)
     .then((module) => module as HapticsModule)
     .catch((error: unknown) => {
-      console.warn("Failed to load expo-haptics:", error)
+      logger.warn("Failed to load expo-haptics:", error)
       return null
     })
 
@@ -57,7 +59,7 @@ export async function triggerNotification(type: NotificationType): Promise<void>
       await Haptics.notificationAsync(feedbackType)
     }
   } catch (error) {
-    console.warn(`Haptics.notificationAsync(${type}) failed:`, error)
+    logger.warn(`Haptics.notificationAsync(${type}) failed:`, error)
   }
 }
 
@@ -83,7 +85,7 @@ export async function triggerImpact(style: ImpactStyle): Promise<void> {
       await Haptics.impactAsync(impactStyle)
     }
   } catch (error) {
-    console.warn(`Haptics.impactAsync(${style}) failed:`, error)
+    logger.warn(`Haptics.impactAsync(${style}) failed:`, error)
   }
 }
 
@@ -94,7 +96,7 @@ export async function triggerSelection(): Promise<void> {
   try {
     await Haptics.selectionAsync()
   } catch (error) {
-    console.warn("Haptics.selectionAsync failed:", error)
+    logger.warn("Haptics.selectionAsync failed:", error)
   }
 }
 

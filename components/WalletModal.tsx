@@ -59,6 +59,7 @@ export function WalletModal({ isOpen, onClose, onConnect }: WalletModalProps) {
             variant="ghost"
             size="icon"
             onClick={handleClose}
+            aria-label="Close wallet modal"
             className="h-6 w-6 rounded-full bg-pink-500 hover:bg-pink-600 text-white"
           >
             <X className="h-4 w-4" />

@@ -45,8 +45,8 @@ async function cancelHuntOnChain(huntId: number): Promise<{ txHash: string }> {
     } else if (typeof w.request === "function") {
         try {
             publicKey = await w.request({ method: "getPublicKey" })
-        } catch (error) {
-            logger.error(error);
+        } catch {
+            // ignore, publicKey remains undefined and error is thrown below
         }
     }
 
@@ -86,8 +86,8 @@ async function cancelHuntOnChain(huntId: number): Promise<{ txHash: string }> {
                 method: "signTransaction",
                 params: { tx: tx.toXDR() },
             })
-        } catch (error) {
-            logger.error(error)
+        } catch (err) {
+            logger.error(err)
         }
     }
 

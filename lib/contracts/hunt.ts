@@ -127,7 +127,8 @@ export async function addClue(
   answer: string,
   points: number,
   hint?: string,
-  hintCost?: number
+  hintCost?: number,
+  difficulty?: import("@/lib/types").ClueDifficulty
 ): Promise<AddClueResult> {
   if (typeof window === "undefined") throw new Error("Browser environment required")
 
@@ -150,6 +151,7 @@ export async function addClue(
     points,
     ...(hint ? { hint } : {}),
     ...(hintCost ? { hint_cost: hintCost } : {}),
+    ...(difficulty ? { difficulty } : {}),
   })
   const key = `add_clue:${Date.now()}`
   const op = Operation.manageData({ name: key, value: payload })
@@ -355,7 +357,7 @@ export async function get_clue_info(huntId: number, clueId: number): Promise<Clu
       try {
         localStorage.setItem(`hunt_clue_start_${huntId}_${clue.id}`, Date.now().toString())
       } catch (e) {
-        console.error("Failed to set start time:", e)
+        logger.error("Failed to set start time:", e)
       }
     }
 
@@ -365,6 +367,7 @@ export async function get_clue_info(huntId: number, clueId: number): Promise<Clu
       points: clue.points,
       hint: clue.hint,
       hintCost: clue.hintCost,
+      difficulty: clue.difficulty,
     }
   } catch (error) {
     throw normalizeNetworkError(error, "Failed to fetch clue")
@@ -421,7 +424,7 @@ export async function pollTransaction(txHash: string): Promise<boolean> {
       if (e instanceof Error && e.message.includes("Transaction failed")) {
         throw e;
       }
-      console.warn("Polling error:", e);
+      logger.warn("Polling error:", e)
     }
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }

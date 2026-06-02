@@ -59,8 +59,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${hankenGrotesk.variable} antialiased`} suppressHydrationWarning>
         <Providers>
+          <a href="#main-content" className="skip-to-content">
+            Skip to content
+          </a>
           <TxToaster />
-          <main>
+          <main id="main-content">
             {children}
           </main>
         </Providers>
