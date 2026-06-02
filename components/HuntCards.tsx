@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import confetti from "canvas-confetti";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
@@ -80,6 +80,8 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  // Ref-based guard to prevent concurrent submissions (avoids double-click race)
+  const submittingRef = useRef(false);
   const [imgGatewayIdx, setImgGatewayIdx] = useState(0);
   const [hintRevealed, setHintRevealed] = useState(false);
 
@@ -91,13 +93,17 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
   };
 
   const handleUnlock = async () => {
-    if (!isActive || preview || isPending) return;
+    if (!isActive || preview) return;
+    // Immediate ref-guard to avoid race from double-clicks or rapid presses
+    if (submittingRef.current) return;
 
-    if (huntId != null) {
-      // Contract path: submit_answer → ClueCompleted | AnswerIncorrect
-      setIsPending(true);
-      setError("");
-      try {
+    submittingRef.current = true;
+    setIsPending(true);
+    setError("");
+
+    try {
+      if (huntId != null) {
+        // Contract path: submit_answer → ClueCompleted | AnswerIncorrect
         const result = await submitAnswer(huntId, Number(hunt.id), input);
         // Poll for transaction inclusion
         if (result && result.txHash) {
@@ -133,51 +139,52 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
           setSuccess(false);
           onUnlock?.();
         }, 1200);
-      } catch (err) {
-        if (err instanceof AnswerIncorrectError) {
-          setError("Try Again");
-        } else {
-          setError(err instanceof Error ? err.message : "Submission failed. Try again.");
-        }
-        setSuccess(false);
-      } finally {
-        setIsPending(false);
-      }
-    } else {
-      // Local fallback (test / preview mode — no wallet required)
-      if (input.trim().toLowerCase() === (hunt.code || "").trim().toLowerCase()) {
-        setSuccess(true);
-        
-        // Celebratory confetti for local/preview mode (Requirement #146)
-        const isLastClue = currentIndex === totalHunts;
-        const isDifficultClue = (points ?? DEFAULT_POINTS) >= 20;
-
-        if (isLastClue) {
-          confetti({
-            particleCount: 150,
-            spread: 100,
-            origin: { y: 0.6 }
-          });
-        } else if (isDifficultClue) {
-          confetti({
-            particleCount: 80,
-            spread: 60,
-            origin: { y: 0.7 }
-          });
-        }
-
-        setError("");
-        setInput("");
-        const actualPoints = Math.max(0, (points ?? DEFAULT_POINTS) - (hintRevealed ? (hunt.hintCost || 0) : 0));
-        onScoreUpdate?.(actualPoints);
-        setTimeout(() => {
-          setSuccess(false);
-          onUnlock?.();
-        }, 1200);
       } else {
-        setError("Try Again");
-        setSuccess(false);
+        // Local fallback (test / preview mode — no wallet required)
+        if (input.trim().toLowerCase() === (hunt.code || "").trim().toLowerCase()) {
+          setSuccess(true);
+          
+          // Celebratory confetti for local/preview mode (Requirement #146)
+          const isLastClue = currentIndex === totalHunts;
+          const isDifficultClue = (points ?? DEFAULT_POINTS) >= 20;
+
+          if (isLastClue) {
+            confetti({
+              particleCount: 150,
+              spread: 100,
+              origin: { y: 0.6 }
+            });
+          } else if (isDifficultClue) {
+            confetti({
+              particleCount: 80,
+              spread: 60,
+              origin: { y: 0.7 }
+            });
+          }
+
+          setError("");
+          setInput("");
+          const actualPoints = Math.max(0, (points ?? DEFAULT_POINTS) - (hintRevealed ? (hunt.hintCost || 0) : 0));
+          onScoreUpdate?.(actualPoints);
+          setTimeout(() => {
+            setSuccess(false);
+            onUnlock?.();
+          }, 1200);
+        } else {
+          setError("Try Again");
+          setSuccess(false);
+        }
       }
+    } catch (err) {
+      if (err instanceof AnswerIncorrectError) {
+        setError("Try Again");
+      } else {
+        setError(err instanceof Error ? err.message : "Submission failed. Try again.");
+      }
+      setSuccess(false);
+    } finally {
+      setIsPending(false);
+      submittingRef.current = false;
     }
   };
 
