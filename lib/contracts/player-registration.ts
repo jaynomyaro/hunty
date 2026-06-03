@@ -1,5 +1,5 @@
 import Server, { TransactionBuilder, Operation } from "@stellar/stellar-sdk"
-import { getSorobanNetworkPassphrase, getSorobanRpcUrl } from "../soroban/client"
+import { SOROBAN_RPC_URL, NETWORK_PASSPHRASE } from "./config"
 import { withSorobanRpcRetry } from "../soroban/rpcRetry"
 import { RegistrationError } from "@/lib/contracts/errors"
 
@@ -274,10 +274,6 @@ export async function getPlayerProgress(
 
   return withRetry(async () => {
     try {
-      const rpcUrl = getSorobanRpcUrl()
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const server = new Server(rpcUrl)
-
       // In a real implementation, this would query the contract's get_player_progress function
       // For now, we simulate the contract call using the manageData pattern
       if (typeof window !== "undefined") {
@@ -335,6 +331,8 @@ const registrationStatusCache = new Map<string, {
   timestamp: number
 }>()
 
+const registrationStatusRequests = new Map<string, Promise<RegistrationStatus>>()
+
 /**
  * Cache TTL in milliseconds (5 minutes)
  */
@@ -382,38 +380,50 @@ export async function checkRegistrationStatus(
     return cached.status
   }
 
-  try {
-    // Query player progress from contract
-    const progressData = await getProgressFn(huntId, playerAddress)
-
-    const status: RegistrationStatus = {
-      isRegistered: progressData !== null,
-      progressData: progressData ?? undefined,
-      loading: false,
-    }
-
-    // Cache the result
-    registrationStatusCache.set(cacheKey, {
-      status,
-      timestamp: Date.now(),
-    })
-
-    return status
-  } catch (error) {
-    const errorMessage = error instanceof RegistrationError 
-      ? error.message 
-      : error instanceof Error 
-        ? error.message 
-        : "Unable to check registration status"
-
-    const errorStatus: RegistrationStatus = {
-      isRegistered: false,
-      loading: false,
-      error: errorMessage,
-    }
-
-    return errorStatus
+  const inFlight = registrationStatusRequests.get(cacheKey)
+  if (inFlight) {
+    return inFlight
   }
+
+  const request = (async () => {
+    try {
+      // Query player progress from contract
+      const progressData = await getProgressFn(huntId, playerAddress)
+
+      const status: RegistrationStatus = {
+        isRegistered: progressData !== null,
+        progressData: progressData ?? undefined,
+        loading: false,
+      }
+
+      // Cache the result
+      registrationStatusCache.set(cacheKey, {
+        status,
+        timestamp: Date.now(),
+      })
+
+      return status
+    } catch (error) {
+      const errorMessage = error instanceof RegistrationError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : "Unable to check registration status"
+
+      const errorStatus: RegistrationStatus = {
+        isRegistered: false,
+        loading: false,
+        error: errorMessage,
+      }
+
+      return errorStatus
+    } finally {
+      registrationStatusRequests.delete(cacheKey)
+    }
+  })()
+
+  registrationStatusRequests.set(cacheKey, request)
+  return request
 }
 
 /**
@@ -426,6 +436,7 @@ export async function checkRegistrationStatus(
 export function clearRegistrationCache(huntId: number, playerAddress: string): void {
   const cacheKey = getCacheKey(huntId, playerAddress)
   registrationStatusCache.delete(cacheKey)
+  registrationStatusRequests.delete(cacheKey)
 }
 
 /**
@@ -455,8 +466,7 @@ export async function registerPlayer(
     }
 
     return await withRetry(async () => {
-      const rpcUrl = getSorobanRpcUrl()
-      const server = new Server(rpcUrl)
+      const server = new Server(SOROBAN_RPC_URL)
       const wallet = getWallet()
       const publicKey = await getPublicKey(wallet)
 
@@ -499,7 +509,7 @@ export async function registerPlayer(
       // Build transaction
       const tx = new TransactionBuilder(account, {
         fee: "100",
-        networkPassphrase: getSorobanNetworkPassphrase(),
+        networkPassphrase: NETWORK_PASSPHRASE,
       })
         .addOperation(op)
         .setTimeout(180)

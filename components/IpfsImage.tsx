@@ -1,5 +1,6 @@
 import Image, { ImageProps } from 'next/image';
 import React from 'react';
+import { logger } from '@/lib/logger';
 
 /**
  * Custom loader that proxies IPFS or gateway URLs through an image optimization service.
@@ -27,20 +28,23 @@ export const ipfsImageLoader = ({ src, width, quality }: { src: string; width: n
  * All other Image props are passed through.
  */
 export const IpfsImage: React.FC<ImageProps> = (props) => {
-  const { src, width, quality, alt = "", ...rest } = props;
+  const { src, width, height, quality, alt = "", ...rest } = props;
   // Ensure src is provided; Next.js Image requires it.
   if (!src) {
-    console.warn('IpfsImage: src prop is missing');
+    logger.warn('IpfsImage: src prop is missing');
     return null;
   }
   // width is required for the loader; if not provided, fall back to a default.
   const effectiveWidth = typeof width === 'number' ? width : 800;
+  // height is required by Next.js Image to reserve layout space and prevent CLS.
+  const effectiveHeight = typeof height === 'number' ? height : effectiveWidth;
   return (
     <Image
       {...rest}
       alt={alt}
       src={src as string}
       width={effectiveWidth}
+      height={effectiveHeight}
       quality={quality ?? 75}
       loader={ipfsImageLoader}
       unoptimized={false}

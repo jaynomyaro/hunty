@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import Coin from "./icons/Coin";
 import { useIsMounted } from "@/hooks/useIsMounted";
 import { useWallet } from "@/lib/context/WalletContext";
@@ -81,9 +82,10 @@ export function Header({ balance = "0" }: { balance?: string }) {
                 </span>
                 {/* Chevron indicator */}
                 <svg
-                  className={`w-3 h-3 ml-1 text-[#3737A4] transition-transform duration-200 ${
-                    dropdownOpen ? "rotate-180" : ""
-                  }`}
+                  className={cn(
+                    "w-3 h-3 ml-1 text-[#3737A4] transition-transform duration-200",
+                    dropdownOpen && "rotate-180"
+                  )}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -117,6 +119,7 @@ export function Header({ balance = "0" }: { balance?: string }) {
                   <div className="p-2 flex flex-col gap-1">
                     <button
                       onClick={handleCopy}
+                      aria-label="Copy wallet address"
                       className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors text-left"
                     >
                       {copied ? (

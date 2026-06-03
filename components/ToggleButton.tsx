@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { cn } from '@/lib/utils'
 import { X, Check } from 'lucide-react'
 
 interface ToggleButtonProps {
@@ -13,21 +14,23 @@ export default function ToggleButton({ isActive, onClick }: ToggleButtonProps) {
     <div className="relative w-20 h-10">
       <div 
         onClick={onClick}
-        className={`w-full h-full rounded-2xl cursor-pointer p-0.5 transition-all duration-300 ${
+        className={cn(
+          "w-full h-full rounded-2xl cursor-pointer p-0.5 transition-all duration-300",
           isActive 
             ? 'bg-gradient-to-b from-[#A43751] to-[#4F0C14]' // Red gradient for ON
             : 'bg-gradient-to-b from-[#39A437] to-[#194F0C]' // Green gradient for OFF
-        }`}
+        )}
       >
         <div className="w-full h-full bg-white rounded-xl overflow-hidden">
           <motion.div
             animate={{ x: isActive ? '100%' : '0%' }}
             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-            className={`w-1/2 h-full rounded-xl flex items-center justify-center ${
+            className={cn(
+              "w-1/2 h-full rounded-xl flex items-center justify-center",
               isActive 
                 ? 'bg-gradient-to-b from-[#A43751] to-[#4F0C14]' // Red gradient for ON
                 : 'bg-gradient-to-b from-[#39A437] to-[#194F0C]' // Green gradient for OFF
-            }`}
+            )}
           >
             {isActive ? (
               <X className="w-5 h-5 text-white" />
@@ -46,13 +49,13 @@ export default function ToggleButton({ isActive, onClick }: ToggleButtonProps) {
         </div>
       </div>
       <div className="absolute inset-0 flex items-center justify-between px-2 pointer-events-none">
-        <div className={`flex-1 flex justify-center ${isActive ? 'text-gray-800' : 'text-gray-400'}`}>
+        <div className={cn("flex-1 flex justify-center", isActive ? 'text-gray-800' : 'text-gray-400')}>
           <Check className="w-4 h-4" />
         </div>
-        <div className={`flex-1 flex justify-center ${!isActive ? 'text-gray-800' : 'text-gray-400'}`}>
+        <div className={cn("flex-1 flex justify-center", !isActive ? 'text-gray-800' : 'text-gray-400')}>
           <X className="w-4 h-4" />
         </div>
       </div>
     </div>
   )
-}
+}

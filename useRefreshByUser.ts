@@ -11,7 +11,7 @@ export function useRefreshByUser(refetch: () => Promise<any>) {
     try {
       await refetch();
     } catch (error) {
-      console.error('Refresh operation failed:', error);
+      logger.error('Refresh operation failed:', error);
     } finally {
       setIsRefreshing(false);
     }

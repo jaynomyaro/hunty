@@ -9,7 +9,8 @@ type XlmUsdPriceState = {
   lastUpdated: number | null
 }
 
-const DEFAULT_POLLING_MS = 30000
+// 5-minute polling to respect free-tier API rate limits
+const DEFAULT_POLLING_MS = 300_000
 
 async function fetchFromCoinbase(): Promise<number> {
   const res = await fetch("https://api.coinbase.com/v2/prices/XLM-USD/spot", {

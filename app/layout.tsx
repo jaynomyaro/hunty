@@ -57,10 +57,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const theme = localStorage.getItem('theme') || 'dark';
+                document.documentElement.classList.add(theme);
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body className={`${hankenGrotesk.variable} antialiased`} suppressHydrationWarning>
         <Providers>
+          <a href="#main-content" className="skip-to-content">
+            Skip to content
+          </a>
           <TxToaster />
-          <main>
+          <main id="main-content">
             {children}
           </main>
         </Providers>

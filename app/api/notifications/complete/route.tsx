@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { HuntCompletionEmail } from '@/components/emails/HuntCompletionEmail';
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   const resend = new Resend(process.env.RESEND_API_KEY);
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Email notification error:', error);
+    logger.error('Email notification error:', error);
     return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
   }
 }

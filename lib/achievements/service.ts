@@ -5,6 +5,7 @@
 
 import type { AchievementId } from "./config"
 import { ACHIEVEMENTS } from "./config"
+import { logger } from "@/lib/logger"
 
 export interface EarnedAchievement {
   id: AchievementId
@@ -34,7 +35,7 @@ export function getEarnedAchievements(address: string): EarnedAchievement[] {
     const data = JSON.parse(stored) as PlayerAchievements
     return data.earned || []
   } catch (error) {
-    console.error("Failed to load achievements:", error)
+    logger.error("Failed to load achievements:", error)
     return []
   }
 }
@@ -82,7 +83,7 @@ export function awardAchievement(address: string, achievementId: AchievementId):
     localStorage.setItem(key, JSON.stringify(data))
     return true
   } catch (error) {
-    console.error("Failed to award achievement:", error)
+    logger.error("Failed to award achievement:", error)
     return false
   }
 }
@@ -204,6 +205,6 @@ export function clearAchievements(address: string): void {
   try {
     localStorage.removeItem(getStorageKey(address))
   } catch (error) {
-    console.error("Failed to clear achievements:", error)
+    logger.error("Failed to clear achievements:", error)
   }
 }

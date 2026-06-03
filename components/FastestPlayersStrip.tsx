@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import Medal from "@/components/icons/Medal"
 import { get_hunt_fastest_players } from "@/lib/contracts/hunt"
 import type { FastestPlayerDisplayEntry } from "@/lib/types"
+import { logger } from "@/lib/logger"
 
 interface FastestPlayersStripProps {
   huntId: number
@@ -51,7 +52,7 @@ export function FastestPlayersStrip({ huntId }: FastestPlayersStripProps) {
 
       setData(mapped)
     } catch (err) {
-      console.error("Failed to fetch fastest players:", err)
+      logger.error("Failed to fetch fastest players:", err)
       setError("Unable to load fastest players right now.")
     } finally {
       setIsLoading(false)

@@ -12,6 +12,7 @@ import { AlertTriangle, X, Loader2 } from "lucide-react"
 import type { StoredHunt } from "@/lib/types"
 import Server, { TransactionBuilder, Networks, Operation, Account } from "@stellar/stellar-sdk"
 import { withSorobanRpcRetry } from "@/lib/soroban/rpcRetry"
+import { logger } from "@/lib/logger"
 
 async function cancelHuntOnChain(huntId: number): Promise<{ txHash: string }> {
     if (typeof window === "undefined") throw new Error("Browser environment required")
@@ -44,8 +45,8 @@ async function cancelHuntOnChain(huntId: number): Promise<{ txHash: string }> {
     } else if (typeof w.request === "function") {
         try {
             publicKey = await w.request({ method: "getPublicKey" })
-        } catch (error) {
-            console.error(error);
+        } catch {
+            // ignore, publicKey remains undefined and error is thrown below
         }
     }
 
@@ -85,8 +86,8 @@ async function cancelHuntOnChain(huntId: number): Promise<{ txHash: string }> {
                 method: "signTransaction",
                 params: { tx: tx.toXDR() },
             })
-        } catch (error) {
-            console.error(error)
+        } catch (err) {
+            logger.error(err)
         }
     }
 

@@ -9,12 +9,14 @@ import { Controller, useFieldArray, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { addClue } from "@/lib/contracts/hunt"
-import { saveClueLocally } from "@/lib/huntStore"
+import { saveClueLocally, updateClueAnswer } from "@/lib/huntStore"
+import { sha256Hex } from "@/lib/crypto"
 import { withTransactionToast } from "@/lib/txToast"
-import { uploadToIPFS } from "@/lib/ipfs"
+import { COVER_IMAGE_UPLOAD_ERROR_MESSAGE, uploadToIPFS } from "@/lib/ipfs"
+import { logger } from "@/lib/logger"
 import { toast } from "sonner"
 import { HuntCards } from "./HuntCards"
-import type { HuntDraft } from "@/lib/types"
+import type { CoverImageUploadState, HuntDraft } from "@/lib/types"
 
 interface HuntFormProps {
   hunt: HuntDraft
@@ -22,6 +24,7 @@ interface HuntFormProps {
   onRemove: () => void
   huntId?: number
   onCluesSaved?: (count: number) => void
+  onImageUploadStateChange?: (state: CoverImageUploadState) => void
 }
 
 const clueSchema = z.object({
@@ -30,6 +33,7 @@ const clueSchema = z.object({
   points: z.number().min(1, "Points must be at least 1"),
   hint: z.string(),
   hintCost: z.number().min(0),
+  difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
 })
 
 const cluesFormSchema = z.object({
@@ -38,12 +42,13 @@ const cluesFormSchema = z.object({
 
 type CluesFormData = z.infer<typeof cluesFormSchema>
 
-export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: HuntFormProps) {
+export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved, onImageUploadStateChange }: HuntFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isSavingClues, setIsSavingClues] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [linkEnabled, setLinkEnabled] = useState(false)
+  const [imageUploadState, setImageUploadState] = useState<CoverImageUploadState>("idle")
 
   const {
     control,
@@ -62,20 +67,40 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
     name: "clues",
   })
 
+  const updateImageUploadState = (state: CoverImageUploadState) => {
+    setImageUploadState(state)
+    onImageUploadStateChange?.(state)
+  }
+
   const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
+    updateImageUploadState("uploading")
     setIsUploading(true)
 
     try {
       const ipfsUri = await uploadToIPFS(file)
-      onUpdate('image', ipfsUri)
+      onUpdate("image", ipfsUri)
+      updateImageUploadState("succeeded")
     } catch (error) {
-      console.error('Error uploading image to IPFS:', error)
-      toast.error(error instanceof Error ? error.message : 'Image upload failed')
+      logger.error("Error uploading image to IPFS:", error)
+      updateImageUploadState("failed")
+      toast.error(COVER_IMAGE_UPLOAD_ERROR_MESSAGE)
     } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
       setIsUploading(false)
+    }
+  }
+
+  const handleClearImage = () => {
+    onUpdate("image", "")
+    updateImageUploadState("idle")
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
     }
   }
 
@@ -102,10 +127,25 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
     try {
       for (const row of valid) {
         const normalizedAnswer = row.answer.trim().toLowerCase()
+        // Persist locally first to obtain a stable clue id for salting
+        const newId = saveClueLocally({
+          huntId,
+          question: row.question.trim(),
+          answer: normalizedAnswer,
+          points: row.points,
+          hint: row.hint?.trim() || undefined,
+          hintCost: row.hintCost,
+          difficulty: row.difficulty,
+        })
+
+        const salt = `${huntId}_${newId}`
+        const hashed = await sha256Hex(normalizedAnswer + salt)
+
         await withTransactionToast(
           async (setStage) => {
             setStage("approving")
-            return addClue(huntId, row.question.trim(), normalizedAnswer, row.points, row.hint?.trim() || undefined, row.hintCost)
+            // Submit the hashed answer to the contract (expected scheme: sha256(answer + salt))
+            return addClue(huntId, row.question.trim(), hashed, row.points, row.hint?.trim() || undefined, row.hintCost, row.difficulty)
           },
           {
             pending:   "Pending — preparing clue…",
@@ -113,14 +153,14 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
             confirmed: "Clue confirmed!",
           }
         )
-        saveClueLocally({
-          huntId,
-          question: row.question.trim(),
-          answer: normalizedAnswer,
-          points: row.points,
-          hint: row.hint?.trim() || undefined,
-          hintCost: row.hintCost,
-        })
+
+        // Update the locally stored clue to contain the hashed answer
+        try {
+          updateClueAnswer(huntId, newId, hashed)
+        } catch (e) {
+          // non-fatal
+          logger.warn("Failed to update local clue answer with hash", e)
+        }
       }
       onCluesSaved?.(valid.length)
       reset({ clues: [{ question: "", answer: "", points: 10, hint: "", hintCost: 0 }] })
@@ -148,6 +188,12 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
             Remove
           </Button>
         </div>
+
+        {errors.clues?.message && (
+          <div role="alert" aria-live="assertive" id="clues-error" className="text-red-500 text-sm mt-2">
+            {errors.clues.message}
+          </div>
+        )}
       </div>
 
       {showPreview && (
@@ -217,6 +263,22 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
           )}
         </div>
       </div>
+      {(hunt.image || imageUploadState === "failed") && (
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <span className={imageUploadState === "failed" ? "text-red-500" : "text-slate-500 dark:text-slate-400"}>
+            {imageUploadState === "failed" ? "Cover image upload failed." : "Cover image attached."}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleClearImage}
+            className="h-auto px-0 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+          >
+            {hunt.image ? "Remove cover image" : "Skip cover image"}
+          </Button>
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -267,13 +329,21 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
                       <Input
                         placeholder="Riddle / Question"
                         aria-label={`Clue ${index + 1} Question`}
+                        aria-describedby={errors.clues?.[index]?.question ? `clue-${index}-question-error` : undefined}
                         {...f}
                         className="pl-3 py-2 text-sm"
                       />
                     )}
                   />
                   {errors.clues?.[index]?.question && (
-                    <span className="text-red-500 text-xs mt-0.5">{errors.clues[index].question.message}</span>
+                    <span
+                      role="alert"
+                      aria-live="assertive"
+                      id={`clue-${index}-question-error`}
+                      className="text-red-500 text-xs mt-0.5"
+                    >
+                      {errors.clues[index].question.message}
+                    </span>
                   )}
                 </div>
                 <div className="w-32 flex flex-col">
@@ -283,15 +353,23 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
                     render={({ field: f }) => (
                       <Input
                         placeholder="Answer (use | for multiple)"
-                        aria-label={`Clue ${index + 1} Answer`}
-                        {...f}
+                          aria-label={`Clue ${index + 1} Answer`}
+                          aria-describedby={errors.clues?.[index]?.answer ? `clue-${index}-answer-error` : undefined}
+                          {...f}
                         className="pl-3 py-2 text-sm"
                       />
                     )}
                   />
-                  {errors.clues?.[index]?.answer && (
-                    <span className="text-red-500 text-xs mt-0.5">{errors.clues[index].answer.message}</span>
-                  )}
+                    {errors.clues?.[index]?.answer && (
+                      <span
+                        role="alert"
+                        aria-live="assertive"
+                        id={`clue-${index}-answer-error`}
+                        className="text-red-500 text-xs mt-0.5"
+                      >
+                        {errors.clues[index].answer.message}
+                      </span>
+                    )}
                 </div>
                 <div className="w-16 flex flex-col">
                   <Controller
@@ -351,6 +429,23 @@ export function HuntForm({ hunt, onUpdate, onRemove, huntId, onCluesSaved }: Hun
                       ref={f.ref}
                       className="w-24 pl-3 py-2 text-sm"
                     />
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name={`clues.${index}.difficulty`}
+                  render={({ field: f }) => (
+                    <select
+                      aria-label={`Clue ${index + 1} Difficulty`}
+                      value={f.value ?? ""}
+                      onChange={(e) => f.onChange(e.target.value || undefined)}
+                      className="w-28 pl-3 py-2 text-sm rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="">Difficulty</option>
+                      <option value="Easy">Easy</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Hard">Hard</option>
+                    </select>
                   )}
                 />
               </div>

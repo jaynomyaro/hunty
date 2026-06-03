@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { logger } from "@/lib/logger"
 import fs from "fs"
 import path from "path"
 
@@ -13,7 +14,7 @@ function readFeaturedId(): number | null {
     const parsed = JSON.parse(raw) as { featuredHuntId: number | null }
     return parsed.featuredHuntId ?? null
   } catch (error) {
-    console.error("Error reading featured hunt server file:", error)
+    logger.error("Error reading featured hunt server file:", error)
     return null
   }
 }
@@ -26,7 +27,7 @@ function writeFeaturedId(id: number | null): void {
     }
     fs.writeFileSync(FILE_PATH, JSON.stringify({ featuredHuntId: id }, null, 2), "utf8")
   } catch (error) {
-    console.error("Error writing featured hunt server file:", error)
+    logger.error("Error writing featured hunt server file:", error)
   }
 }
 
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
     const { huntId } = await req.json() as { huntId: number | null }
     writeFeaturedId(huntId)
     return NextResponse.json({ success: true, featuredHuntId: huntId })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Invalid request payload" }, { status: 400 })
   }
 }

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { logger } from "@/lib/logger"
+import { Suspense, useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -26,7 +27,8 @@ import { RewardsPanel } from "@/components/RewardsPanel"
 import { GamePreview } from "@/components/GamePreview"
 import { PublishModal } from "@/components/PublishModal"
 import ToggleButton from "@/components/ToggleButton"
-import type { HuntDraft, Reward } from "@/lib/types"
+import { COVER_IMAGE_UPLOAD_ERROR_MESSAGE } from "@/lib/ipfs"
+import type { CoverImageUploadState, HuntDraft, Reward } from "@/lib/types"
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { toast } from "sonner"
 import { downloadElementAsImage } from "@/lib/downloadAsImage"
@@ -40,11 +42,12 @@ const EMPTY_HUNT_DRAFT: HuntDraft = {
   code: "",
 }
 
-export default function CreateGame() {  
+function CreateGameContent() {  
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<"create" | "rewards" | "publish" | "leaderboard">("create")
   const [hunts, setHunts] = useLocalStorage<HuntDraft[]>("draft-hunts", [EMPTY_HUNT_DRAFT])
   const [rewards, setRewards] = useLocalStorage<Reward[]>("draft-rewards", []);
+  const [rewardType, setRewardType] = useLocalStorage<"XLM" | "NFT" | "Both">("draft-rewardType", "XLM");
   const [gameName, setGameName] = useLocalStorage("draft-gameName", "Hunty")
   const [startDate, setStartDate] = useLocalStorage("draft-startDate", "")
   const [endDate, setEndDate] = useLocalStorage("draft-endDate", "")
@@ -56,6 +59,7 @@ export default function CreateGame() {
   const [timerEnabled, setTimerEnabled] = useState(false)
   const [isPrivate, setIsPrivate] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false);
+  const [coverImageUploadStates, setCoverImageUploadStates] = useState<Record<number, CoverImageUploadState>>({})
   const [selectedTemplateTitle, setSelectedTemplateTitle] = useState<string | null>(null)
   const previewContainerRef = useRef<HTMLDivElement | null>(null)
   const appliedTemplateRef = useRef<string | null>(null)
@@ -100,6 +104,32 @@ export default function CreateGame() {
 
   const rewardPool = rewards.reduce((sum, r) => sum + r.amount, 0)
 
+  const setCoverImageUploadState = (huntId: number, state: CoverImageUploadState) => {
+    setCoverImageUploadStates((current) => {
+      if (state === "idle" || state === "succeeded") {
+        const next = { ...current }
+        delete next[huntId]
+        return next
+      }
+
+      return { ...current, [huntId]: state }
+    })
+  }
+
+  const getCoverImageUploadBlockMessage = () => {
+    const states = Object.values(coverImageUploadStates)
+
+    if (states.includes("uploading")) {
+      return "Please wait for the cover image upload to finish before publishing."
+    }
+
+    if (states.includes("failed")) {
+      return COVER_IMAGE_UPLOAD_ERROR_MESSAGE
+    }
+
+    return null
+  }
+
   const huntItemSchema = z.object({
     id: z.number(),
     title: z.string().min(4, "Clue title must be at least 4 characters."),
@@ -124,6 +154,7 @@ export default function CreateGame() {
       emailNotifications: z.boolean(),
       timerEnabled: z.boolean(),
       isPrivate: z.boolean(),
+      rewardType: z.enum(["XLM", "NFT", "Both"] as const),
       hunts: z.array(huntItemSchema).min(3, "At least 3 clues are required."),
       rewards: z.array(rewardItemSchema).min(1, "At least one reward slot is required."),
     })
@@ -176,6 +207,7 @@ export default function CreateGame() {
       emailNotifications,
       timerEnabled,
       isPrivate,
+      rewardType,
       hunts,
       rewards,
     },
@@ -189,6 +221,7 @@ export default function CreateGame() {
     setValue("emailNotifications", emailNotifications)
     setValue("timerEnabled", timerEnabled)
     setValue("isPrivate", isPrivate)
+    setValue("rewardType", rewardType)
     setValue("hunts", hunts)
     setValue("rewards", rewards)
     void trigger()
@@ -200,6 +233,7 @@ export default function CreateGame() {
     emailNotifications,
     timerEnabled,
     isPrivate,
+    rewardType,
     hunts,
     rewards,
     rewardPool,
@@ -243,6 +277,11 @@ export default function CreateGame() {
   const removeHunt = (id: number) => {
     if (hunts.length > 1) {
       setHunts(hunts.filter((hunt) => hunt.id !== id));
+      setCoverImageUploadStates((current) => {
+        const next = { ...current }
+        delete next[id]
+        return next
+      })
     }
   };
 
@@ -255,6 +294,12 @@ export default function CreateGame() {
   };
 
   const handlePublish = async (formValues: z.infer<typeof formSchema>) => {
+    const coverImageUploadBlockMessage = getCoverImageUploadBlockMessage()
+    if (coverImageUploadBlockMessage) {
+      toast.error(coverImageUploadBlockMessage)
+      return
+    }
+
     if (!isFormValidated) {
       toast.error("Please fix validation issues before publishing the hunt.")
       return
@@ -298,7 +343,10 @@ export default function CreateGame() {
         description,
         cluesCount: formValues.hunts.length,
         status: "Draft",
-        rewardType: formValues.rewards.length > 1 ? "Both" : "XLM",
+        rewardType: formValues.rewardType,
+        rewardPool,
+        playerCount: 0,
+        createdAt: Math.floor(Date.now() / 1000),
         startTime: start_time,
         endTime: end_time,
         creatorEmail: formValues.creatorEmail || undefined,
@@ -310,7 +358,7 @@ export default function CreateGame() {
       setShowPublishModal(false);
       router.push("/hunts");
     } catch (error) {
-       console.error("Publish failed:", error);
+       logger.error("Publish failed:", error);
     } finally {
       setIsPublishing(false);
     }
@@ -335,7 +383,7 @@ export default function CreateGame() {
       })
       toast.success("Preview downloaded.")
     } catch (error) {
-      console.error("Failed to download image:", error)
+      logger.error("Failed to download image:", error)
       toast.error("Could not download image.")
     }
   }
@@ -424,6 +472,7 @@ export default function CreateGame() {
                             updateHunt(hunt.id, field, value)
                           }
                           onRemove={() => removeHunt(hunt.id)}
+                          onImageUploadStateChange={(state) => setCoverImageUploadState(hunt.id, state)}
                         />
                       ))}
 
@@ -460,8 +509,34 @@ export default function CreateGame() {
                       transition={{ duration: 0.3, ease: "easeInOut" }}
                       className="space-y-6"
                     >
+                      <div className="space-y-3">
+                        <label className="block text-lg font-semibold text-slate-900 dark:text-slate-100">
+                          Reward Type
+                        </label>
+                        <div className="grid grid-cols-3 gap-3">
+                          {(["XLM", "NFT", "Both"] as const).map((type) => (
+                            <button
+                              key={type}
+                              onClick={() => setRewardType(type)}
+                              className={`px-4 py-3 rounded-lg font-semibold transition-all ${
+                                rewardType === type
+                                  ? type === "XLM"
+                                    ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-2 border-green-500"
+                                    : type === "NFT"
+                                    ? "bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border-2 border-purple-500"
+                                    : "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-2 border-amber-500"
+                                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-2 border-transparent"
+                              }`}
+                            >
+                              {type}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       <RewardsPanel
                         rewards={rewards}
+                        rewardType={rewardType}
                         onUpdateReward={updateReward}
                         onAddReward={addReward}
                         onDeleteReward={deleteReward}
@@ -710,6 +785,12 @@ export default function CreateGame() {
                         </Button>
                         <Button
                           onClick={() => {
+                            const coverImageUploadBlockMessage = getCoverImageUploadBlockMessage()
+                            if (coverImageUploadBlockMessage) {
+                              toast.error(coverImageUploadBlockMessage)
+                              return
+                            }
+
                             if (!isFormValidated) {
                               toast.error("Please fill all required hunt details before publishing.")
                               return
@@ -748,4 +829,12 @@ export default function CreateGame() {
       <QrCodeModal open={qrOpen} onClose={() => setQrOpen(false)} url={typeof window !== "undefined" ? window.location.href : ""} />
     </TooltipProvider>
   );
+}
+
+export default function CreateGame() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-tr from-blue-100 bg-purple-100 to-[#f9f9ff]" />}>
+      <CreateGameContent />
+    </Suspense>
+  )
 }

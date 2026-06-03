@@ -20,6 +20,9 @@ import { GlobalActivityFeed } from "@/components/GlobalActivityFeed"
 import { FeaturedHunts } from "@/components/FeaturedHunts"
 import { HuntCoverImage } from "@/components/HuntCoverImage"
 import { Footer } from "@/components/Footer"
+import { usePlayerCounts } from "@/hooks/usePlayerCounts"
+import { useRecentlyCompleted } from "@/hooks/useRecentlyCompleted"
+import { RecentlyCompletedSection } from "@/components/RecentlyCompletedSection"
 
 interface WalletOption {
   id: string
@@ -68,10 +71,66 @@ export default function GameArcade() {
   const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Completed">("Active")
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "clues-high" | "clues-low">("newest")
 
+  const isLoadedRef = useRef(false)
+
+  // Load initial filter states from sessionStorage to persist state within the session
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedSearch = sessionStorage.getItem("arcade_searchQuery")
+      if (savedSearch) setSearchQuery(savedSearch)
+
+      const savedReward = sessionStorage.getItem("arcade_rewardFilter")
+      if (savedReward && ["all", "XLM", "NFT", "Both"].includes(savedReward)) {
+        setRewardFilter(savedReward as any)
+      }
+
+      const savedStatus = sessionStorage.getItem("arcade_statusFilter")
+      if (savedStatus && ["all", "Active", "Completed"].includes(savedStatus)) {
+        setStatusFilter(savedStatus as any)
+      }
+      isLoadedRef.current = true
+    }
+  }, [])
+
+  // Sync states to sessionStorage on change
+  useEffect(() => {
+    if (isLoadedRef.current && typeof window !== "undefined") {
+      sessionStorage.setItem("arcade_searchQuery", searchQuery)
+    }
+  }, [searchQuery])
+
+  useEffect(() => {
+    if (isLoadedRef.current && typeof window !== "undefined") {
+      sessionStorage.setItem("arcade_rewardFilter", rewardFilter)
+    }
+  }, [rewardFilter])
+
+  useEffect(() => {
+    if (isLoadedRef.current && typeof window !== "undefined") {
+      sessionStorage.setItem("arcade_statusFilter", statusFilter)
+    }
+  }, [statusFilter])
+
   const { data: hunts = [], isLoading: isLoadingHunts } = useQuery({
     queryKey: ["activeHunts"],
     queryFn: async () => fetchAllHunts(),
+    staleTime: 60_000,
+    gcTime: 300_000,
   })
+
+  // Fetch player counts for all visible hunts. refetch is called on mount via
+  // useEffect below to ensure counts are fresh on each arcade page load.
+  const allHuntIds = hunts.map((h) => String(h.id))
+  const { counts: playerCounts, refetch: refetchPlayerCounts } = usePlayerCounts(allHuntIds)
+
+  // Derive recently completed hunts from the same list — no extra fetch.
+  const recentlyCompleted = useRecentlyCompleted(hunts)
+
+  // Refresh player counts whenever the hunt list loads/changes.
+  useEffect(() => {
+    if (hunts.length > 0) refetchPlayerCounts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hunts.length])
 
   const visibleInactiveHunts = useMemo(
     () => inactiveHunts.slice(0, visibleInactiveCount),
@@ -304,6 +363,9 @@ export default function GameArcade() {
         {/* Featured Hunts Hero Section */}
         <FeaturedHunts />
 
+        {/* Recently Completed — derived from the same hunt list, no extra fetch */}
+        <RecentlyCompletedSection hunts={recentlyCompleted} />
+
         {/* Active Hunts Grid */}
         <div className="mt-10">
           <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-6 border-b border-slate-100 dark:border-white/5 pb-8">
@@ -409,10 +471,13 @@ export default function GameArcade() {
               {!searchQuery && <span className="font-semibold text-[#3737A4]">Be the first to create one!</span>}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredHunts.map((hunt) => (
+            <div data-testid="arcade-hunt-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredHunts.map((hunt) => {
+                const pc = playerCounts.get(String(hunt.id))
+                return (
                 <Card
                   key={hunt.id}
+                  data-testid="arcade-hunt-card"
                   className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <HuntCoverImage
@@ -421,14 +486,24 @@ export default function GameArcade() {
                     className="relative w-full h-40 bg-slate-100"
                   />
                   <div className="p-5">
-                    <CardTitle className="text-lg font-semibold mb-2 line-clamp-2 dark:text-slate-100">
-                      {hunt.title}
-                    </CardTitle>
+                    <div className="flex items-center gap-2 mb-1">
+                      <CardTitle className="text-lg font-semibold line-clamp-2 dark:text-slate-100 flex-1">
+                        {hunt.title}
+                      </CardTitle>
+                      {pc?.isTrending && (
+                        <span
+                          className="shrink-0 inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700"
+                          aria-label="Trending hunt"
+                        >
+                          🔥 Trending
+                        </span>
+                      )}
+                    </div>
                     <CardDescription className="text-sm text-slate-600 dark:text-slate-400 mb-4 line-clamp-3">
                       {hunt.description}
                     </CardDescription>
                     <div className="flex items-center justify-between mt-4">
-                      <div className="flex gap-2 items-center">
+                      <div className="flex gap-2 items-center flex-wrap">
                         <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-medium text-[#3737A4]">
                           {hunt.cluesCount} {hunt.cluesCount === 1 ? "Clue" : "Clues"}
                         </span>
@@ -439,25 +514,42 @@ export default function GameArcade() {
                         }`}>
                           {hunt.rewardType} Reward
                         </span>
+                        {pc && !pc.isLoading && !pc.error && (
+                          <span
+                            className="player-count inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-700 px-3 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300"
+                            aria-label={`${pc.count} player${pc.count !== 1 ? "s" : ""} registered`}
+                          >
+                            👥 {pc.count} player{pc.count !== 1 ? "s" : ""}
+                          </span>
+                        )}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 mt-2 w-full justify-between">
+                        <Button
+                          size="sm"
+                          className="bg-gradient-to-r from-[#3737A4] to-[#0C0C4F] hover:opacity-90 text-white rounded-xl font-semibold h-8 text-[11px] px-3"
+                          onClick={() => {
+                            window.location.href = `/hunt/${hunt.id}`
+                          }}
+                        >
+                          Play
+                        </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-[#3737A4] hover:bg-slate-100 flex items-center gap-1.5 h-8 text-[11px] font-semibold"
+                          className="text-[#3737A4] hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-1 h-8 text-[11px] font-semibold dark:text-blue-400"
                           onClick={() => {
-                            // Link to the leaderboard tab in the arcade/hunty page
-                            window.location.href = `/hunty?huntId=${hunt.id}&tab=leaderboard`
+                            window.location.href = `/hunt/${hunt.id}/leaderboard`
                           }}
                         >
                           <Trophy className="w-3.5 h-3.5" />
-                          Leaderboard
+                          Watch Live
                         </Button>
                       </div>
                     </div>
                   </div>
                 </Card>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
@@ -557,17 +649,17 @@ export default function GameArcade() {
           {!isConnectingWallet ? (
             <div className="space-y-3">
               {walletOptions.length > 0 ? (
-                walletOptions.map((wallet) => (
+                walletOptions.map((_wallet) => (
                   <Button
-                    key={wallet.id}
+                    key={_wallet.id}
                     onClick={() => handleWalletSelect()}
                     className="w-full bg-[#0C0C4F] hover:bg-slate-700 text-white p-4 rounded-lg flex items-center gap-3 justify-start px-6 py-6"
                   >
-                    <span className="text-xl">{wallet.icon}</span>
+                    <span className="text-xl">{_wallet.icon}</span>
                     <div className="text-left">
                       <div className="flex">
-                        <div className="font-medium">{wallet.name}</div>
-                        {wallet.description && <div className="text-sm opacity-80">{wallet.description}</div>}
+                        <div className="font-medium">{_wallet.name}</div>
+                        {_wallet.description && <div className="text-sm opacity-80">{_wallet.description}</div>}
                       </div>
                     </div>
                   </Button>

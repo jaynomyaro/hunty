@@ -2,12 +2,12 @@
 
 import { HuntControls } from "@/components/HuntControls";
 import { Button } from "@/components/ui/button";
-import { QrCode } from "lucide-react";
+import { QrCode, Trophy } from "lucide-react";
 import { QrCodeModal } from "@/components/QrCodeModal";
 import type { StoredHunt } from "@/lib/types";
 import { updateHuntStatus } from "@/lib/huntStore";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { RegistrationButton } from "@/components/RegistrationButton";
 import { PlayInterfaceGuard } from "@/components/PlayInterfaceGuard";
 import { 
@@ -20,6 +20,8 @@ import {
 import { PlayGame } from "@/components/PlayGame";
 import { GameCompleteModal } from "@/components/GameCompleteModal";
 import { useQueryClient } from "@tanstack/react-query";
+import { debounce } from "@/lib/debounce";
+import { REGISTRATION_STATUS_DEBOUNCE_MS } from "@/lib/soroban/queryConfig";
 
 interface HuntDetailProps {
   hunt: StoredHunt;
@@ -84,34 +86,51 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
     }
   }, []);
 
-  // Check registration status when wallet is connected (Requirement 1.1, 2.3)
-  useEffect(() => {
-    async function checkStatus() {
-      if (!walletCheckComplete) {
-        return;
-      }
+  const refreshRegistrationStatus = useCallback(async (isActive: () => boolean = () => true) => {
+    if (!walletCheckComplete || !isActive()) {
+      return;
+    }
 
-      if (!connectedPublicKey) {
+    if (!connectedPublicKey) {
+      if (isActive()) {
         setRegistrationStatus({
           isRegistered: false,
           loading: false,
           error: "Please connect your wallet to continue",
         });
-        return;
       }
-
-      // Set loading state
-      setRegistrationStatus({
-        isRegistered: false,
-        loading: true,
-      });
-
-      const status = await checkRegistrationStatus(hunt.id, connectedPublicKey);
-      setRegistrationStatus(status);
+      return;
     }
 
-    checkStatus();
+    // Set loading state
+    setRegistrationStatus({
+      isRegistered: false,
+      loading: true,
+    });
+
+    const status = await checkRegistrationStatus(hunt.id, connectedPublicKey);
+    if (isActive()) {
+      setRegistrationStatus(status);
+    }
   }, [hunt.id, connectedPublicKey, walletCheckComplete]);
+
+  // Check registration status when wallet is connected (Requirement 1.1, 2.3)
+  useEffect(() => {
+    let isActive = true;
+    const debouncedCheckStatus = debounce(
+      () => {
+        void refreshRegistrationStatus(() => isActive);
+      },
+      REGISTRATION_STATUS_DEBOUNCE_MS
+    );
+
+    debouncedCheckStatus();
+
+    return () => {
+      isActive = false;
+      debouncedCheckStatus.cancel();
+    };
+  }, [refreshRegistrationStatus]);
 
   // Handle player registration (Requirements 1.3, 1.4, 1.5)
   const handleRegister = async () => {
@@ -124,13 +143,30 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
     if (result.success) {
       // Clear cache and refresh registration status after successful registration
       clearRegistrationCache(hunt.id, connectedPublicKey);
-      const updatedStatus = await checkRegistrationStatus(hunt.id, connectedPublicKey);
-      setRegistrationStatus(updatedStatus);
+      await refreshRegistrationStatus();
     } else {
       // Error is already handled by RegistrationButton component
       throw new Error(result.error || "Registration failed");
     }
   };
+
+  // Track anonymous hunt page views for creator engagement analytics.
+  useEffect(() => {
+    void (async () => {
+      try {
+        await fetch("/api/analytics/hunt-view", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ huntId: hunt.id }),
+          keepalive: true,
+        })
+      } catch {
+        // analytics failure should not affect the user experience
+      }
+    })()
+  }, [hunt.id])
 
   const handleShare = async () => {
     const url = `${window.location.origin}/hunt/${hunt.id}`;
@@ -160,8 +196,18 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
             />
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center gap-2 bg-amber-500/10 text-amber-400 border border-amber-500/30 font-semibold text-base px-8 py-4 rounded-2xl">
-            Please connect your wallet to join this hunt
+          <div className="flex-1 flex flex-col sm:flex-row items-stretch gap-4 w-full">
+            <div className="flex-1 flex items-center justify-center gap-2 bg-amber-500/10 text-amber-400 border border-amber-500/30 font-semibold text-base px-8 py-4 rounded-2xl">
+              Please connect your wallet to join this hunt
+            </div>
+            <Button
+              variant="outline"
+              className="flex-1 border-[#3737A4] text-white hover:bg-[#3737A4]/20 py-4 h-auto font-semibold text-base rounded-2xl"
+              onClick={() => router.push(`/hunt/${hunt.id}/leaderboard`)}
+            >
+              <Trophy className="w-5 h-5 mr-2" />
+              Watch Live Leaderboard
+            </Button>
           </div>
         )}
 
@@ -185,7 +231,13 @@ export default function HuntShare({ hunt }: HuntDetailProps) {
               </>
             )}
           </Button>
-          <Button variant="outline" size="icon" onClick={() => setQrOpen(true)} title="Show QR Code">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setQrOpen(true)}
+            title="Show QR Code"
+            aria-label="Show QR code for this hunt"
+          >
             <QrCode className="w-4 h-4" />
           </Button>
         </div>

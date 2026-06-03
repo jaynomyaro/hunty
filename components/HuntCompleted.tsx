@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Lottie from 'lottie-react';
+import { useXlmUsdPrice } from "@/hooks/useXlmUsdPrice";
 
 type NFT = {
   id: string;
@@ -19,6 +20,16 @@ const FIREWORK_URL_1 = "https://assets10.lottiefiles.com/packages/lf20_jhu1lmks.
 const FIREWORK_URL_2 = "https://assets2.lottiefiles.com/packages/lf20_xlky4kvh.json";
 
 export default function HuntCompleted({ xlmEarned, nftsEarned, onClaim }: HuntCompletedProps) {
+  const { price: xlmUsdPrice } = useXlmUsdPrice();
+
+  const currencyFormatter = new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  });
+
+  const usdEquivalent =
+    xlmUsdPrice != null ? currencyFormatter.format(xlmEarned * xlmUsdPrice) : null;
   const [animatedXlm, setAnimatedXlm] = React.useState(0);
   const [lottie1Loaded, setLottie1Loaded] = React.useState(false);
   const [lottie2Loaded, setLottie2Loaded] = React.useState(false);
@@ -286,6 +297,17 @@ export default function HuntCompleted({ xlmEarned, nftsEarned, onClaim }: HuntCo
               >
                 ✦ {animatedXlm.toFixed(1)}
               </div>
+              {usdEquivalent && (
+                <div
+                  style={{
+                    fontSize: '16px',
+                    color: '#a0a0b0',
+                    marginTop: '4px',
+                  }}
+                >
+                  ≈ {usdEquivalent}
+                </div>
+              )}
             </div>
           </div>
 

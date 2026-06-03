@@ -4,6 +4,8 @@ import { withSorobanRpcRetry } from "@/lib/soroban/rpcRetry"
 import { normalizeNetworkError, AnswerIncorrectError } from "./errors"
 import { SOROBAN_RPC_URL, NETWORK_PASSPHRASE } from "./config"
 import { getActiveWalletAdapter } from "@/lib/walletAdapter"
+import { sha256Hex } from "@/lib/crypto"
+import { logger } from "@/lib/logger"
 
 import type { ClueInfo, HuntInfo, CreateHuntResult, SubmitAnswerResult, ActivateHuntResult, AddClueResult, ExtendHuntResult, LeaderboardEntry, FastestPlayerEntry } from "@/lib/types"
 
@@ -125,7 +127,8 @@ export async function addClue(
   answer: string,
   points: number,
   hint?: string,
-  hintCost?: number
+  hintCost?: number,
+  difficulty?: import("@/lib/types").ClueDifficulty
 ): Promise<AddClueResult> {
   if (typeof window === "undefined") throw new Error("Browser environment required")
 
@@ -133,7 +136,11 @@ export async function addClue(
   const wallet = getActiveWalletAdapter()
   const publicKey = await wallet.getPublicKey()
 
-  const normalizedAnswer = answer.trim().toLowerCase()
+  // Expect `answer` to be the pre-hashed value (SHA-256 hex) computed
+  // client-side using the scheme: sha256(lowercase(answer) + `${huntId}_${clueId}`)
+  // For backwards compatibility, if a plain-text answer is provided it will be
+  // stored as-is (legacy behaviour).
+  const normalizedAnswer = answer
 
   const account = (await withSorobanRpcRetry(() => server.getAccount(publicKey))) as Account
   const payload = JSON.stringify({
@@ -144,6 +151,7 @@ export async function addClue(
     points,
     ...(hint ? { hint } : {}),
     ...(hintCost ? { hint_cost: hintCost } : {}),
+    ...(difficulty ? { difficulty } : {}),
   })
   const key = `add_clue:${Date.now()}`
   const op = Operation.manageData({ name: key, value: payload })
@@ -233,7 +241,7 @@ export async function get_hunt_leaderboard(huntId: number): Promise<LeaderboardE
         }
       }
     } catch (e) {
-      console.error("Failed to fetch leaderboard:", e)
+      logger.error("Failed to fetch leaderboard:", e)
     }
   }
 
@@ -269,22 +277,31 @@ export async function get_hunt_fastest_players(huntId: number): Promise<FastestP
 
         if (rows.length > 0) {
           return rows
-            .map((entry) => ({
-              address: entry.address,
-              name: entry.name,
-              points: typeof entry.points === "number" ? entry.points : undefined,
-              completionTimeSeconds:
-                typeof entry.completion_time_seconds === "number"
-                  ? entry.completion_time_seconds
-                  : typeof entry.duration_seconds === "number"
-                  ? entry.duration_seconds
-                  : Math.floor((Number(entry.completion_time_ms ?? entry.duration_ms ?? 0) / 1000) || 0),
-            }))
-            .filter((entry) => entry.address && entry.completionTimeSeconds >= 0)
+            .map((entry): FastestPlayerEntry | null => {
+              if (typeof entry.address !== "string") {
+                return null
+              }
+
+              return {
+                address: entry.address,
+                name: entry.name,
+                points: typeof entry.points === "number" ? entry.points : undefined,
+                completionTimeSeconds:
+                  typeof entry.completion_time_seconds === "number"
+                    ? entry.completion_time_seconds
+                    : typeof entry.duration_seconds === "number"
+                    ? entry.duration_seconds
+                    : Math.floor((Number(entry.completion_time_ms ?? entry.duration_ms ?? 0) / 1000) || 0),
+              }
+            })
+            .filter(
+              (entry): entry is FastestPlayerEntry =>
+                entry !== null && typeof entry.address === "string" && entry.completionTimeSeconds >= 0
+            )
         }
       }
     } catch (error) {
-      console.warn("Torii indexer fetch failed:", error)
+      logger.warn("Torii indexer fetch failed:", error)
     }
   }
 
@@ -340,7 +357,7 @@ export async function get_clue_info(huntId: number, clueId: number): Promise<Clu
       try {
         localStorage.setItem(`hunt_clue_start_${huntId}_${clue.id}`, Date.now().toString())
       } catch (e) {
-        console.error("Failed to set start time:", e)
+        logger.error("Failed to set start time:", e)
       }
     }
 
@@ -350,6 +367,7 @@ export async function get_clue_info(huntId: number, clueId: number): Promise<Clu
       points: clue.points,
       hint: clue.hint,
       hintCost: clue.hintCost,
+      difficulty: clue.difficulty,
     }
   } catch (error) {
     throw normalizeNetworkError(error, "Failed to fetch clue")
@@ -368,7 +386,7 @@ export async function pollTransaction(txHash: string): Promise<boolean> {
   }
 
   const server = new Server(SOROBAN_RPC_URL);
-  const maybeServer = server as Server & {
+  const maybeServer = server as typeof server & {
     getTransaction?: (hash: string) => Promise<{ status: string }>
   }
   
@@ -406,7 +424,7 @@ export async function pollTransaction(txHash: string): Promise<boolean> {
       if (e instanceof Error && e.message.includes("Transaction failed")) {
         throw e;
       }
-      console.warn("Polling error:", e);
+      logger.warn("Polling error:", e)
     }
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }
@@ -429,10 +447,18 @@ export async function submitAnswer(
   if (!clue) throw new Error(`Clue ${clueId} not found for hunt ${huntId}`)
 
   const userAnswer = answer.trim().toLowerCase()
-  const possibleAnswers = clue.answer.toLowerCase().split("|").map((a) => a.trim())
 
-  if (!possibleAnswers.includes(userAnswer)) {
-    throw new AnswerIncorrectError()
+  // Detect stored hashed answer (hex SHA-256) vs legacy plain answers.
+  const stored = clue.answer || ""
+  const isHexSha256 = /^[a-f0-9]{64}$/i.test(stored)
+
+  if (isHexSha256) {
+    const salt = `${huntId}_${clue.id}`
+    const hashed = await sha256Hex(userAnswer + salt)
+    if (hashed !== stored) throw new AnswerIncorrectError()
+  } else {
+    const possibleAnswers = stored.toLowerCase().split("|").map((a) => a.trim())
+    if (!possibleAnswers.includes(userAnswer)) throw new AnswerIncorrectError()
   }
 
   // Calculate speed bonus
@@ -459,7 +485,7 @@ export async function submitAnswer(
         localStorage.setItem(solvedKey, "true");
       }
     } catch (e) {
-      console.error("Failed to update local clue state in localStorage after answer submission:", e)
+      logger.error("Failed to update local clue state in localStorage after answer submission:", e)
     }
   }
 

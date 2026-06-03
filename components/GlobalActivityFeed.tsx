@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react"
 import { Trophy, CheckCircle2, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import {
   type ActivityEvent,
   anonymizeAddress,
@@ -41,11 +42,12 @@ function ActivityItem({ event }: { event: ActivityEvent }) {
     >
       {/* Icon */}
       <div
-        className={`shrink-0 rounded-full p-1.5 ${
+        className={cn(
+          "shrink-0 rounded-full p-1.5",
           isCompleted
             ? "bg-gradient-to-br from-[#39A437] to-[#194F0C] text-white"
             : "bg-gradient-to-br from-[#3737A4] to-[#0C0C4F] text-white"
-        }`}
+        )}
       >
         {isCompleted ? (
           <Trophy className="w-3.5 h-3.5" />
@@ -66,7 +68,7 @@ function ActivityItem({ event }: { event: ActivityEvent }) {
       </div>
 
       {/* Time */}
-      <span className="shrink-0 text-[11px] text-slate-400 dark:text-slate-500 tabular-nums">
+      <span className="shrink-0 text-[11px] text-slate-400 dark:text-slate-300 tabular-nums">
         {relativeTime(event.timestamp)}
       </span>
     </motion.div>
@@ -137,7 +139,7 @@ export function GlobalActivityFeed({
         setError("Unable to load activity feed.")
         // Keep stale events visible on error
       }
-      console.error("[GlobalActivityFeed] fetch error:", err)
+      logger.error("[GlobalActivityFeed] fetch error:", err)
     } finally {
       if (isMountedRef.current) {
         setLoading(false)
@@ -192,7 +194,7 @@ export function GlobalActivityFeed({
             <SkeletonItem />
           </>
         ) : events.length === 0 ? (
-          <div className="text-center py-6 text-slate-500 dark:text-slate-400 text-sm">
+          <div className="text-center py-6 text-slate-500 dark:text-slate-300 text-sm">
             No activity yet — be the first to complete a hunt!
           </div>
         ) : (

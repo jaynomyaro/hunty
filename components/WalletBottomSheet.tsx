@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { 
   X, 
   ChevronRight, 
@@ -86,6 +87,7 @@ export function WalletBottomSheet({ isOpen, onClose, onConnect }: WalletBottomSh
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
+                aria-label="Close wallet options"
                 className="rounded-full bg-slate-100 dark:bg-slate-800 h-10 w-10"
               >
                 <X className="h-5 w-5" />
@@ -97,6 +99,7 @@ export function WalletBottomSheet({ isOpen, onClose, onConnect }: WalletBottomSh
               <button
                 onClick={() => handleConnect("xbull")}
                 disabled={!!connectingProvider}
+                aria-label="Connect xBull wallet"
                 className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 p-[1px] transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <div className="flex items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-[calc(1rem-1px)]">
@@ -115,6 +118,7 @@ export function WalletBottomSheet({ isOpen, onClose, onConnect }: WalletBottomSh
               <button
                 onClick={() => handleConnect("lobstr")}
                 disabled={!!connectingProvider}
+                aria-label="Connect Lobstr wallet"
                 className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 p-[1px] transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <div className="flex items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-[calc(1rem-1px)]">
@@ -149,13 +153,14 @@ export function WalletBottomSheet({ isOpen, onClose, onConnect }: WalletBottomSh
               <div className="mt-8 rounded-3xl bg-slate-50 dark:bg-slate-800/50 p-6 border border-slate-100 dark:border-slate-800">
                 <button 
                   onClick={() => setShowEducation(!showEducation)}
+                  aria-label={showEducation ? "Hide wallet education" : "Show wallet education"}
                   className="flex w-full items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
                     <HelpCircle className="h-5 w-5 text-indigo-500" />
                     <span className="font-semibold text-slate-900 dark:text-white">New to Web3?</span>
                   </div>
-                  <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${showEducation ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={cn("h-5 w-5 text-slate-400 transition-transform", showEducation && 'rotate-180')} />
                 </button>
 
                 <AnimatePresence>

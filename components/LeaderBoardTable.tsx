@@ -1,8 +1,10 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState, useCallback, memo } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 import { get_hunt_leaderboard } from "@/lib/contracts/hunt"
+import { logger } from "@/lib/logger"
 import Medal from "@/components/icons/Medal"
 import type { LeaderboardDisplayEntry } from "@/lib/types"
 
@@ -12,7 +14,7 @@ interface LeaderboardTableProps {
   isLoading?: boolean
 }
 
-export function LeaderboardTable({ huntId, data: initialData, isLoading: initialLoading = false }: LeaderboardTableProps) {
+function LeaderboardTableComponent({ huntId, data: initialData, isLoading: initialLoading = false }: LeaderboardTableProps) {
   const [data, setData] = useState<LeaderboardDisplayEntry[]>(initialData || [])
   const [isLoading, setIsLoading] = useState(initialLoading)
   const [error, setError] = useState<string | null>(null)
@@ -45,7 +47,7 @@ export function LeaderboardTable({ huntId, data: initialData, isLoading: initial
       setData(mappedData)
       setError(null)
     } catch (err) {
-      console.error("Failed to fetch leaderboard:", err)
+      logger.error("Failed to fetch leaderboard:", err)
       setError("Failed to load leaderboard data.")
     } finally {
       setIsLoading(false)
@@ -64,7 +66,7 @@ export function LeaderboardTable({ huntId, data: initialData, isLoading: initial
 
   if (error) {
     return (
-      <div className={`${containerClass} p-8 text-center bg-white dark:bg-slate-900 rounded-xl border border-red-200 dark:border-red-900/30`}>
+      <div className={cn(containerClass, "p-8 text-center bg-white dark:bg-slate-900 rounded-xl border border-red-200 dark:border-red-900/30")}>
         <p className="text-red-500 dark:text-red-400 font-medium">{error}</p>
         <button
           onClick={() => fetchLeaderboard()}
@@ -78,7 +80,7 @@ export function LeaderboardTable({ huntId, data: initialData, isLoading: initial
 
   if (!isLoading && data.length === 0) {
     return (
-      <div className={`${containerClass} p-12 text-center bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-700`}>
+      <div className={cn(containerClass, "p-12 text-center bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-700")}>
         <p className="text-slate-500 dark:text-slate-400 font-medium">No players on the leaderboard yet. Be the first!</p>
       </div>
     )
@@ -133,3 +135,5 @@ export function LeaderboardTable({ huntId, data: initialData, isLoading: initial
     </div>
   )
 }
+
+export const LeaderboardTable = memo(LeaderboardTableComponent)

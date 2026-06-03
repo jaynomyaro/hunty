@@ -26,6 +26,9 @@ export const SEED_HUNTS: StoredHunt[] = [
     cluesCount: 5,
     status: "Active",
     rewardType: "XLM",
+    rewardPool: 150,
+    playerCount: 32,
+    createdAt: NOW_SECONDS - 2 * 86400,
     startTime: NOW_SECONDS - 86400,
     endTime: NOW_SECONDS + 7 * 86400,
   },
@@ -36,6 +39,9 @@ export const SEED_HUNTS: StoredHunt[] = [
     cluesCount: 7,
     status: "Active",
     rewardType: "NFT",
+    rewardPool: 40,
+    playerCount: 21,
+    createdAt: NOW_SECONDS - 4 * 86400,
     startTime: NOW_SECONDS - 2 * 86400,
     endTime: NOW_SECONDS + 3 * 86400,
   },
@@ -46,6 +52,9 @@ export const SEED_HUNTS: StoredHunt[] = [
     cluesCount: 4,
     status: "Completed",
     rewardType: "Both",
+    rewardPool: 250,
+    playerCount: 14,
+    createdAt: NOW_SECONDS - 12 * 86400,
     startTime: NOW_SECONDS - 10 * 86400,
     endTime: NOW_SECONDS - 5 * 86400,
   },
@@ -56,6 +65,9 @@ export const SEED_HUNTS: StoredHunt[] = [
     cluesCount: 3,
     status: "Draft",
     rewardType: "XLM",
+    rewardPool: 80,
+    playerCount: 0,
+    createdAt: NOW_SECONDS - 3 * 86400,
   },
   {
     id: 5,
@@ -64,6 +76,9 @@ export const SEED_HUNTS: StoredHunt[] = [
     cluesCount: 0,
     status: "Draft",
     rewardType: "NFT",
+    rewardPool: 25,
+    playerCount: 0,
+    createdAt: NOW_SECONDS - 86400,
   },
 ]
 
@@ -182,7 +197,7 @@ export function getHuntClues(huntId: number): Clue[] {
 }
 
 /** Persist a new clue locally and increment the hunt's cluesCount. */
-export function saveClueLocally(clue: Omit<Clue, "id">): void {
+export function saveClueLocally(clue: Omit<Clue, "id">): number {
   const all = readClues()
   const newId = all.length > 0 ? Math.max(...all.map((c) => c.id)) + 1 : 1
   writeClues([...all, { ...clue, id: newId }])
@@ -190,6 +205,18 @@ export function saveClueLocally(clue: Omit<Clue, "id">): void {
     h.id === clue.huntId ? { ...h, cluesCount: h.cluesCount + 1 } : h
   )
   writeHunts(hunts)
+  return newId
+}
+
+/** Update an existing clue's answer or other fields. Returns true if updated. */
+export function updateClueAnswer(huntId: number, clueId: number, answer: string): boolean {
+  const all = readClues()
+  const idx = all.findIndex((c) => c.huntId === huntId && c.id === clueId)
+  if (idx === -1) return false
+  const updated = [...all]
+  updated[idx] = { ...updated[idx], answer }
+  writeClues(updated)
+  return true
 }
 
 /** Snapshot current hunts/clues for optimistic UI rollback. */

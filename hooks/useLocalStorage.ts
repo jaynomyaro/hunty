@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { logger } from "@/lib/logger"
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
   // State to store our value
@@ -15,7 +16,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       }
     } catch (error) {
       // If error also return initialValue
-      console.warn(`Error reading localStorage key "${key}":`, error)
+      logger.warn(`Error reading localStorage key "${key}":`, error)
     }
   }, [key])
 
@@ -34,7 +35,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       }
     } catch (error) {
       // A more advanced implementation would handle the error case
-      console.warn(`Error setting localStorage key "${key}":`, error)
+      logger.warn(`Error setting localStorage key "${key}":`, error)
     }
   }
 

@@ -5,12 +5,14 @@ import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Header } from "@/components/Header";
 import { PlayerProgressPanel } from "@/components/PlayerProgressPanel";
 import { get_clue_info, get_hunt } from "@/lib/contracts/hunt";
+import { SOROBAN_READ_STALE_TIME_MS } from "@/lib/soroban/queryConfig";
 
 import { HuntCards } from "./HuntCards";
 import Replay from "./icons/Replay";
@@ -65,14 +67,20 @@ export function PlayGame({
           points: clue.points,
           hint: clue.hint,
           hintCost: clue.hintCost,
+          difficulty: clue.difficulty,
         });
       }
       return { clues, huntInfo };
     },
     enabled: huntId != null,
+    staleTime: SOROBAN_READ_STALE_TIME_MS,
   });
 
   const error: string | null = queryError instanceof Error ? queryError.message : queryError ? "Failed to fetch clues" : null;
+  const fetchedClues = fetched?.clues ?? null;
+  const huntInfo = fetched?.huntInfo ?? null;
+  const hunts = huntId != null ? (fetchedClues ?? []) : (huntsProp ?? []);
+  const hasHunts = hunts.length > 0;
 
   useEffect(() => {
     setCurrentCardIndex(0);
@@ -98,11 +106,6 @@ export function PlayGame({
     }
   }, [huntInfo?.endTime]);
 
-  const fetchedClues = fetched?.clues ?? null;
-  const huntInfo = fetched?.huntInfo ?? null;
-  const hunts = huntId != null ? (fetchedClues ?? []) : (huntsProp ?? []);
-  const hasHunts = hunts.length > 0;
-
   const handleScoreUpdate = (points: number) => {
     setScore((prev) => prev + points);
   };
@@ -127,7 +130,7 @@ export function PlayGame({
             creatorEmail: huntInfo.creatorEmail,
             completionTime: new Date().toLocaleString(),
           }),
-        }).catch((err) => console.error("Failed to send notification:", err));
+        }).catch((err) => logger.error("Failed to send notification:", err));
       }
       if (huntId) {
         localStorage.setItem(`hunt_completed_${huntId}`, "true");

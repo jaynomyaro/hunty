@@ -1,10 +1,12 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Plus, Minus } from "lucide-react"
 import Trash from "@/components/icons/trash"
 import Coin from "@/components/icons/Coin"
 import { useState } from "react"
+import { logger } from "@/lib/logger"
 import { useXlmUsdPrice } from "@/hooks/useXlmUsdPrice"
 import type { Reward, RewardPlayerProgress } from "@/lib/types"
 import { claimReward } from "@/lib/contracts/rewardManager"
@@ -13,6 +15,7 @@ export type { Reward, RewardPlayerProgress as PlayerProgress }
 
 export interface RewardsPanelProps {
   rewards: Reward[];
+  rewardType?: "XLM" | "NFT" | "Both";
   onUpdateReward?: (place: number, amount: number) => void;
   onAddReward?: () => void;
   onDeleteReward?: (place: number) => void;
@@ -21,7 +24,7 @@ export interface RewardsPanelProps {
   onClaimReward?: (hunt_id?: number | string) => Promise<void>;
 }
 
-export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteReward, error, playerProgress, onClaimReward }: RewardsPanelProps) {
+export function RewardsPanel({ rewards, rewardType = "XLM", onUpdateReward, onAddReward, onDeleteReward, error, playerProgress, onClaimReward }: RewardsPanelProps) {
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimed, setClaimed] = useState(playerProgress?.reward_claimed || false);
   const { price: xlmUsdPrice } = useXlmUsdPrice()
@@ -53,7 +56,7 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
       }
       setClaimed(true);
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     } finally {
       setIsClaiming(false);
     }
@@ -65,8 +68,8 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
         <div className="rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3">
           <p className="text-sm font-medium text-blue-900">Total Prize Pool</p>
           <p className="text-lg font-semibold text-blue-950">
-            {totalRewardXlm.toFixed(2)} XLM
-            {totalRewardUsd ? ` (${totalRewardUsd})` : ""}
+            {totalRewardXlm.toFixed(2)} {rewardType}
+            {totalRewardUsd ? ` (≈ ${totalRewardUsd})` : ""}
           </p>
         </div>
       )}
@@ -83,6 +86,7 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
                 size="icon"
                 variant="ghost"
                 onClick={() => onUpdateReward(reward.place, reward.amount - 0.1)}
+                aria-label={`Decrease reward for place ${reward.place}`}
                 className="w-6 h-6 border-2 border-transparent bg-origin-border hover:opacity-80 rounded-lg"
                 style={{
                   background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(to right, #0C0C4F, #4A4AFF) border-box'
@@ -96,10 +100,9 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
                 <div className="flex flex-col">
                   <span className="text-[16px] font-medium bg-gradient-to-b from-[#3737A4] to-[#0C0C4F] text-transparent bg-clip-text">
                     {reward.amount.toPrecision(3)} XLM
-                  </span>
-                  {xlmUsdPrice != null && (
+                  </span>                    {xlmUsdPrice != null && (
                     <span className="text-[11px] text-slate-500">
-                      {currencyFormatter.format(reward.amount * xlmUsdPrice)}
+                      ≈ {currencyFormatter.format(reward.amount * xlmUsdPrice)}
                     </span>
                   )}
                 </div>
@@ -109,6 +112,7 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
                 size="icon"
                 variant="ghost"
                 onClick={() => onUpdateReward(reward.place, reward.amount + 0.1)}
+                aria-label={`Increase reward for place ${reward.place}`}
                 className="w-6 h-6 border-2 border-transparent bg-origin-border hover:opacity-80 rounded-lg"
                 style={{
                   background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(to right, #0C0C4F, #4A4AFF) border-box'
@@ -120,6 +124,7 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
             {onDeleteReward && (
               <Button 
                 variant="ghost" 
+                aria-label={`Delete reward for place ${reward.place}`}
                 className="w-8 h-8 p-3 bg-gradient-to-b from-[#FD0A44] to-[#932331] text-white rounded-lg ml-2 cursor-pointer hover:opacity-80"
                 onClick={() => onDeleteReward(reward.place)}
               >
@@ -147,11 +152,12 @@ export function RewardsPanel({ rewards, onUpdateReward, onAddReward, onDeleteRew
           <Button
             onClick={handleClaim}
             disabled={claimed || isClaiming}
-            className={`px-8 py-3 rounded-full text-white font-bold text-lg w-full max-w-sm ${
-              claimed 
-                ? 'bg-gray-400 cursor-not-allowed' 
+            className={cn(
+              "px-8 py-3 rounded-full text-white font-bold text-lg w-full max-w-sm",
+              claimed
+                ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-gradient-to-b from-[#39A437] to-[#194F0C] hover:opacity-90'
-            }`}
+            )}
           >
             {claimed ? "Claimed" : isClaiming ? "Claiming..." : "Claim Prize"}
           </Button>

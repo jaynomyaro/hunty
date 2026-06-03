@@ -3,6 +3,7 @@
 import React, { useState } from "react"
 import Image from "next/image"
 import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
 import { Card, CardContent } from "@/components/ui/card"
 import { resolveImageSrc } from "@/lib/ipfs"
 import { NftDetailModal, type NftRewardDetail } from "./NftDetailModal"
@@ -52,7 +53,11 @@ export function NftGallery({ nfts }: NftGalleryProps) {
               <CardContent className="p-0">
                 {/* Badge for claimed status */}
                 <div className="absolute top-3 right-3 z-10">
-                  <div className={`p-1.5 rounded-full ${nft.claimed ? "bg-emerald-500" : "bg-amber-500"} shadow-lg shadow-emerald-500/20`}>
+                  <div className={cn(
+                    "p-1.5 rounded-full",
+                    nft.claimed ? "bg-emerald-500" : "bg-amber-500",
+                    "shadow-lg shadow-emerald-500/20"
+                  )}>
                     <Star className="w-3 h-3 text-white fill-white" />
                   </div>
                 </div>
