@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react"
 import { Trophy, CheckCircle2, Loader2 } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import {
@@ -29,14 +29,14 @@ function relativeTime(timestampSeconds: number): string {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function ActivityItem({ event }: { event: ActivityEvent }) {
+function ActivityItem({ event, prefersReducedMotion }: { event: ActivityEvent; prefersReducedMotion: boolean }) {
   const isCompleted = event.type === "HuntCompleted"
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 12 }}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: -12 }}
+      animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+      exit={prefersReducedMotion ? {} : { opacity: 0, y: 12 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="flex items-center gap-3 py-2.5 px-4 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-slate-100 dark:border-white/5 shadow-sm hover:shadow-md transition-shadow backdrop-blur-sm"
     >
@@ -107,6 +107,7 @@ export function GlobalActivityFeed({
   const [events, setEvents] = useState<ActivityEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const prefersReducedMotion = !!useReducedMotion()
   const isMountedRef = useRef(false)
   const previousEventIdsRef = useRef<Set<string>>(new Set())
   const hasRenderedRef = useRef(false)
@@ -200,7 +201,7 @@ export function GlobalActivityFeed({
         ) : (
           <AnimatePresence initial={false}>
             {events.map((event) => (
-              <ActivityItem key={event.id} event={event} />
+              <ActivityItem key={event.id} event={event} prefersReducedMotion={prefersReducedMotion} />
             ))}
           </AnimatePresence>
         )}

@@ -2,7 +2,7 @@
 
 import { logger } from "@/lib/logger"
 import { Suspense, useState, useEffect, useRef } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
@@ -65,7 +65,14 @@ function CreateGameContent() {
   const appliedTemplateRef = useRef<string | null>(null)
   const router = useRouter()
 
+  const prefersReducedMotion = useReducedMotion()
 
+  const tabMotion = {
+    initial: prefersReducedMotion ? false : { x: direction > 0 ? 50 : -50, opacity: 0 },
+    animate: prefersReducedMotion ? {} : { x: 0, opacity: 1 },
+    exit: prefersReducedMotion ? {} : { x: direction > 0 ? -50 : 50, opacity: 0 },
+    transition: prefersReducedMotion ? { duration: 0 } : { duration: 0.3, ease: "easeInOut" },
+  }
 
   const tabToIndex = { create: 0, rewards: 1, publish: 2, leaderboard: 3 }
 
@@ -431,10 +438,7 @@ function CreateGameContent() {
                     <motion.div
                       key="create"
                       custom={direction}
-                      initial={{ x: direction > 0 ? 50 : -50, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      exit={{ x: direction > 0 ? -50 : 50, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      {...tabMotion}
                       className="space-y-6"
                     >
                       <div className="rounded-3xl border border-sky-100 bg-gradient-to-r from-white to-sky-50 p-5 shadow-sm">
@@ -503,10 +507,7 @@ function CreateGameContent() {
                     <motion.div
                       key="rewards"
                       custom={direction}
-                      initial={{ x: direction > 0 ? 50 : -50, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      exit={{ x: direction > 0 ? -50 : 50, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      {...tabMotion}
                       className="space-y-6"
                     >
                       <div className="space-y-3">
@@ -566,10 +567,7 @@ function CreateGameContent() {
                     <motion.div
                       key="publish"
                       custom={direction}
-                      initial={{ x: direction > 0 ? 50 : -50, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      exit={{ x: direction > 0 ? -50 : 50, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      {...tabMotion}
                       className="space-y-6"
                     >
                       <div className="flex items-center justify-between">

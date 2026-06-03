@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useReducedMotion } from "framer-motion";
 import confetti from "canvas-confetti";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
@@ -85,6 +86,7 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
   const [imgGatewayIdx, setImgGatewayIdx] = useState(0);
   const [hintRevealed, setHintRevealed] = useState(false);
   const [keyboardInsetHeight, setKeyboardInsetHeight] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -150,20 +152,22 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
         // Celebratory confetti (Requirement #146)
         const isLastClue = currentIndex === totalHunts;
         const isDifficultClue = (points ?? DEFAULT_POINTS) >= 20;
-        
-        if (isLastClue) {
-          confetti({
-            particleCount: 150,
-            spread: 100,
-            origin: { y: 0.6 },
-            colors: ["#3737A4", "#E3225C", "#39A437", "#FFD43E"]
-          });
-        } else if (isDifficultClue) {
-          confetti({
-            particleCount: 80,
-            spread: 60,
-            origin: { y: 0.7 }
-          });
+
+        if (!prefersReducedMotion) {
+          if (isLastClue) {
+            confetti({
+              particleCount: 150,
+              spread: 100,
+              origin: { y: 0.6 },
+              colors: ["#3737A4", "#E3225C", "#39A437", "#FFD43E"],
+            });
+          } else if (isDifficultClue) {
+            confetti({
+              particleCount: 80,
+              spread: 60,
+              origin: { y: 0.7 },
+            });
+          }
         }
 
         setInput("");
@@ -182,18 +186,20 @@ export const HuntCards: React.FC<HuntCardsProps> = ({
           const isLastClue = currentIndex === totalHunts;
           const isDifficultClue = (points ?? DEFAULT_POINTS) >= 20;
 
-          if (isLastClue) {
-            confetti({
-              particleCount: 150,
-              spread: 100,
-              origin: { y: 0.6 }
-            });
-          } else if (isDifficultClue) {
-            confetti({
-              particleCount: 80,
-              spread: 60,
-              origin: { y: 0.7 }
-            });
+          if (!prefersReducedMotion) {
+            if (isLastClue) {
+              confetti({
+                particleCount: 150,
+                spread: 100,
+                origin: { y: 0.6 },
+              });
+            } else if (isDifficultClue) {
+              confetti({
+                particleCount: 80,
+                spread: 60,
+                origin: { y: 0.7 },
+              });
+            }
           }
 
           setError("");

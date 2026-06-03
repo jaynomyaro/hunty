@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import { useReducedMotion } from "framer-motion"
 import Image from "next/image"
 import confetti from "canvas-confetti"
 
@@ -62,6 +63,7 @@ export function GameCompleteModal({
 
   const certificateRef = useRef<HTMLDivElement>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const prefersReducedMotion = useReducedMotion()
   const [newAchievements, setNewAchievements] = useState<string[]>([])
 
   const { data: registrationStatus } = useQuery({
@@ -79,11 +81,13 @@ export function GameCompleteModal({
 
   useEffect(() => {
     if (isOpen) {
-      confetti({
-        particleCount: 150,
-        spread: 80,
-        origin: { y: 0.6 }
-      });
+      if (!prefersReducedMotion) {
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 },
+        });
+      }
 
       // Check and award achievements on hunt completion
       if (playerAddress) {
@@ -113,7 +117,7 @@ export function GameCompleteModal({
         }
       }
     }
-  }, [isOpen, playerAddress]);
+  }, [isOpen, playerAddress, prefersReducedMotion]);
 
   const handleShareAchievement = async (platform?: "twitter" | "farcaster") => {
     if (!certificateRef.current) return
